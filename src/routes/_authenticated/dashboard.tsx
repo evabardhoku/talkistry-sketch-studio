@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { projectsQuery } from "@/lib/queries";
 import { computeReadiness } from "@/lib/spec";
+import { PENDING_IDEA_KEY } from "@/lib/pending";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -25,7 +26,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-export const PENDING_IDEA_KEY = (id: string) => `specloop:idea:${id}`;
 
 function NewProjectDialog() {
   const [open, setOpen] = useState(false);
