@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Project } from "./types";
 
 async function must<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<NonNullable<T>> {
   const { data, error } = await p;
@@ -23,7 +24,7 @@ export const workspaceQuery = (projectId: string) => queryOptions({
   queryKey: ["workspace", projectId],
   queryFn: async () => {
     const [project, messages, requirements, questions, screens, connections, decisions, versions] = await Promise.all([
-      must(supabase.from("projects").select("*").eq("id", projectId).single()),
+      must(supabase.from("projects").select("*").eq("id", projectId).single()) as Promise<Project>,
       must(supabase.from("conversation_messages").select("*").eq("project_id", projectId).order("created_at")),
       must(supabase.from("requirements").select("*").eq("project_id", projectId).order("created_at")),
       must(supabase.from("clarification_questions").select("*").eq("project_id", projectId).order("created_at")),
