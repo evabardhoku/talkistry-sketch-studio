@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { parseBaseline } from "./baseline";
 import { discoveryTurnJsonSchema, discoveryTurnSchema, type DiscoveryTurn } from "./ai-schema";
 import { elapsed, stageElapsed, parseAgenda, similarQuestion } from "./meeting";
+import { canReviseAiDraft } from './discovery-policy';
 
 type DB = SupabaseClient<Database>;
 
@@ -149,7 +150,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     const existing=(reqs.data ?? []).find(r=>r.title.toLowerCase()===suggestion.title.toLowerCase());
     if(existing){
       // AI can revise only its own unreviewed draft; human edits and approvals are never overwritten.
-      if(existing.origin==='ai'&&!existing.last_decision_id&&['proposed','unresolved'].includes(existing.status)){
+      if(canReviseAiDraft(existing)){
         const saved=await sb.from('requirements').update({description:suggestion.description,status:suggestion.status,evidence:suggestion.evidence_quote||null,source_message_id:userMsg.data.id,updated_at:new Date().toISOString()}).eq('id',existing.id);
         if(saved.error)throw new Error('Could not save the updated requirement suggestion.');
       }

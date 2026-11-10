@@ -11,4 +11,9 @@ describe("discovery safety", () => {
   it("rejects malformed sketches instead of persisting unsupported components", () => {
     expect(discoveryTurnSchema.safeParse({ ...turn, screens: [{ key: "search", name: "Search", purpose: "Find a tutor", user_role: "Parent", components: [{ type: "ai_image", label: "Photo", items: [] }], unresolved: [], change_note: "" }] }).success).toBe(false);
   });
+  it('accepts only the three defined question priorities', () => {
+    const question = { question: 'Which countries?', topic: 'shipping', rationale: 'Coverage', priority: 'secondary' };
+    expect(discoveryTurnSchema.safeParse({ ...turn, next_question: question }).success).toBe(true);
+    expect(discoveryTurnSchema.safeParse({ ...turn, next_question: { ...question, priority: 'urgent' } }).success).toBe(false);
+  });
 });

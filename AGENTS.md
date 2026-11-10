@@ -45,3 +45,4 @@ use the editor.
 - Meeting agendas are ordered JSON within project-linked meetings; atomic timer RPCs persist elapsed time and stage transitions, while UI ticks are deterministic and never call AI.
 - Clarification questions are the only shared backlog; stable IDs, trigger-owned answer history and explicit active selection preserve prior answers across rephrasing.
 - Internal insights and comments use separate role-restricted reads and are excluded from discovery context/exports; only a reviewed client-facing question is explicitly promoted.
+- Discovery revision policy permits only unreviewed AI drafts to change; confirmed or human-reviewed requirements require separately reviewable proposals.
