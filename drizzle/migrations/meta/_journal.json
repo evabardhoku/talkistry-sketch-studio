@@ -43,6 +43,13 @@
       "when": 1794352664563,
       "tag": "0005_question_backlog_statuses",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794352704429,
+      "tag": "0006_meeting_intelligence",
+      "breakpoints": true
     }
   ]
 }
