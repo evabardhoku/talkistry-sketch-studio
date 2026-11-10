@@ -14,7 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
-import { Route as AuthenticatedProjectsProjectIdSpecRouteImport } from './routes/_authenticated/projects.$projectId_.spec'
+import { Route as AuthenticatedProjectsProjectIdSpecificationRouteImport } from './routes/_authenticated/projects.$projectId_.specification'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,10 +41,10 @@ const AuthenticatedProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedProjectsProjectIdSpecRoute =
-  AuthenticatedProjectsProjectIdSpecRouteImport.update({
-    id: '/projects/$projectId_/spec',
-    path: '/projects/$projectId/spec',
+const AuthenticatedProjectsProjectIdSpecificationRoute =
+  AuthenticatedProjectsProjectIdSpecificationRouteImport.update({
+    id: '/projects/$projectId_/specification',
+    path: '/projects/$projectId/specification',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -53,14 +53,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
-  '/projects/$projectId/spec': typeof AuthenticatedProjectsProjectIdSpecRoute
+  '/projects/$projectId/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
-  '/projects/$projectId/spec': typeof AuthenticatedProjectsProjectIdSpecRoute
+  '/projects/$projectId/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,7 +69,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
-  '/_authenticated/projects/$projectId_/spec': typeof AuthenticatedProjectsProjectIdSpecRoute
+  '/_authenticated/projects/$projectId_/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -78,14 +78,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/projects/$projectId'
-    | '/projects/$projectId/spec'
+    | '/projects/$projectId/specification'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/dashboard'
     | '/projects/$projectId'
-    | '/projects/$projectId/spec'
+    | '/projects/$projectId/specification'
   id:
     | '__root__'
     | '/'
@@ -93,7 +93,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/projects/$projectId'
-    | '/_authenticated/projects/$projectId_/spec'
+    | '/_authenticated/projects/$projectId_/specification'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -139,11 +139,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/projects/$projectId_/spec': {
-      id: '/_authenticated/projects/$projectId_/spec'
-      path: '/projects/$projectId/spec'
-      fullPath: '/projects/$projectId/spec'
-      preLoaderRoute: typeof AuthenticatedProjectsProjectIdSpecRouteImport
+    '/_authenticated/projects/$projectId_/specification': {
+      id: '/_authenticated/projects/$projectId_/specification'
+      path: '/projects/$projectId/specification'
+      fullPath: '/projects/$projectId/specification'
+      preLoaderRoute: typeof AuthenticatedProjectsProjectIdSpecificationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -152,14 +152,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
-  AuthenticatedProjectsProjectIdSpecRoute: typeof AuthenticatedProjectsProjectIdSpecRoute
+  AuthenticatedProjectsProjectIdSpecificationRoute: typeof AuthenticatedProjectsProjectIdSpecificationRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
-  AuthenticatedProjectsProjectIdSpecRoute:
-    AuthenticatedProjectsProjectIdSpecRoute,
+  AuthenticatedProjectsProjectIdSpecificationRoute:
+    AuthenticatedProjectsProjectIdSpecificationRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
