@@ -33,7 +33,34 @@ export const workspaceQuery = (projectId: string) => queryOptions({
       must(supabase.from("decisions").select("*").eq("project_id", projectId).order("created_at", { ascending: false })),
       must(supabase.from("specification_versions").select("*").eq("project_id", projectId).order("version", { ascending: false })),
     ]);
-    return { project, messages, requirements, questions, screens, connections, decisions, versions };
+    const [comments, scopeChanges, people, session] = await Promise.all([
+      must(supabase.from("review_comments").select("*").eq("project_id", projectId).order("created_at")),
+      must(supabase.from("scope_changes").select("*").eq("project_id", projectId).order("created_at", { ascending: false })),
+      must(supabase.rpc("get_project_people", { _project_id: projectId })),
+      supabase.auth.getSession(),
+    ]);
+    const meId = session.data.session?.user.id ?? null;
+    const myRole = people.find((p) => p.user_id === meId)?.role ?? null;
+    return { project, messages, requirements, questions, screens, connections, decisions, versions, comments, scopeChanges, people, meId, myRole };
   },
 });
 export type Workspace = Awaited<ReturnType<NonNullable<ReturnType<typeof workspaceQuery>["queryFn"]>>>;
+
+/** Minimal access info: works for live members and baseline-only viewers. */
+export const accessQuery = (projectId: string) => queryOptions({
+  queryKey: ["access", projectId],
+  queryFn: async () => {
+    const { data: s } = await supabase.auth.getSession();
+    const uid = s.session?.user.id ?? "";
+    const [project, member] = await Promise.all([
+      must(supabase.from("projects").select("*").eq("id", projectId).single()) as Promise<Project>,
+      must(supabase.from("project_members").select("*").eq("project_id", projectId).eq("user_id", uid).maybeSingle()),
+    ]);
+    return { project, member };
+  },
+});
+
+export const baselinesQuery = (projectId: string) => queryOptions({
+  queryKey: ["baselines", projectId],
+  queryFn: () => must(supabase.from("specification_versions").select("*").eq("project_id", projectId).eq("kind", "baseline").order("version", { ascending: false })),
+});
