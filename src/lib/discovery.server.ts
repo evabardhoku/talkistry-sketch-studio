@@ -10,10 +10,10 @@ type DB = SupabaseClient<Database>;
 const SYSTEM = `You are SpecLoop, an AI product discovery facilitator ("product sketch artist") helping a non-technical client and a developer agree on what software should do.
 Rules:
 - Be friendly, concise, professional; plain language, no jargon. "reply" is 1-3 short sentences then the next question (if any).
-- Ask exactly ONE high-value clarification question at a time. Adapt to earlier answers. Skip topics that are irrelevant to this product.
+- Ask at most ONE high-value clarification question at a time. Adapt to earlier answers. Skip topics that are irrelevant to this product.
 - Explore when relevant: target users & roles, permissions, core workflows, business rules, exceptions/edge cases, payments, notifications, data to store.
 - NEVER invent business requirements. Only suggest requirements directly supported by what the human said; put the exact supporting words in evidence_quote. If something is implied but not stated, put it in "ambiguities" or as status "unresolved" — not "proposed".
-- Do not repeat requirements that already exist in the current list (by meaning).
+- Reuse existing requirement titles for an affected unreviewed AI draft that needs revision. Never rewrite confirmed or human-edited requirements; propose a separately reviewable change instead. Do not repeat unaffected requirements.
 - Screens: a low-fidelity sketch. Return ONLY screens that are new or should change this turn (full definition for each). Reuse existing keys to update. Use component types: header, nav, card, form, input, button, list, search, calendar, table, modal, text. Mark functionality whose behaviour is undecided in "unresolved". change_note explains why the screen changed (or "").
 - connections: navigation between screens by key (existing or new); return only new links.
 - If the user skipped the question, don't push; move to another valuable topic.
@@ -62,7 +62,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   try {
   const [msgs, reqs, qs, screens] = await Promise.all([
     sb.from("conversation_messages").select("role,content").eq("session_id", session.id).order("created_at", { ascending: false }).limit(24),
-    sb.from("requirements").select("id,category,title,description,status,evidence").eq("project_id", projectId),
+    sb.from("requirements").select("id,category,title,description,status,evidence,origin,last_decision_id").eq("project_id", projectId),
     sb.from("clarification_questions").select("*").eq("project_id", projectId).order("created_at"),
     sb.from("product_screens").select("id,key,name,purpose,user_role,components,unresolved").eq("project_id", projectId).order("position"),
   ]);
@@ -144,16 +144,26 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   }
 
   const existingTitles = new Set((reqs.data ?? []).map((r) => r.title.toLowerCase()));
-  const newReqs = [
-    ...turn.requirement_suggestions.filter((r) => !existingTitles.has(r.title.toLowerCase())).map((r) => ({
-      project_id: projectId, category: r.category, title: r.title, description: r.description, status: r.status,
-      evidence: r.evidence_quote || null, source_message_id: userMsg.data.id, origin: "ai",
-    })),
-    ...turn.ambiguities.filter((a) => !existingTitles.has(a.toLowerCase())).map((a) => ({
-      project_id: projectId, category: "constraint", title: a.slice(0, 140), description: "Detected ambiguity — needs a decision.",
-      status: "unresolved" as const, evidence: null, source_message_id: userMsg.data.id, origin: "ai",
-    })),
-  ];
+  const newReqs: Database['public']['Tables']['requirements']['Insert'][] = [];
+  for(const suggestion of turn.requirement_suggestions){
+    const existing=(reqs.data ?? []).find(r=>r.title.toLowerCase()===suggestion.title.toLowerCase());
+    if(existing){
+      // AI can revise only its own unreviewed draft; human edits and approvals are never overwritten.
+      if(existing.origin==='ai'&&!existing.last_decision_id&&['proposed','unresolved'].includes(existing.status)){
+        const saved=await sb.from('requirements').update({description:suggestion.description,status:suggestion.status,evidence:suggestion.evidence_quote||null,source_message_id:userMsg.data.id,updated_at:new Date().toISOString()}).eq('id',existing.id);
+        if(saved.error)throw new Error('Could not save the updated requirement suggestion.');
+      }
+      continue;
+    }
+    if(existingTitles.has(suggestion.title.toLowerCase()))continue;
+    existingTitles.add(suggestion.title.toLowerCase());
+    newReqs.push({project_id:projectId,category:suggestion.category,title:suggestion.title,description:suggestion.description,status:suggestion.status,evidence:suggestion.evidence_quote||null,source_message_id:userMsg.data.id,origin:'ai'});
+  }
+  for(const ambiguity of turn.ambiguities){
+    if(existingTitles.has(ambiguity.toLowerCase()))continue;
+    existingTitles.add(ambiguity.toLowerCase());
+    newReqs.push({project_id:projectId,category:'constraint',title:ambiguity.slice(0,140),description:'Detected ambiguity — needs a decision.',status:'unresolved',source_message_id:userMsg.data.id,origin:'ai'});
+  }
   if (newReqs.length) { const saved = await sb.from("requirements").insert(newReqs); if (saved.error) throw new Error("Your answer was saved, but requirements could not be saved. Refresh before sending again."); }
 
   const existingScreens = screens.data ?? [];
