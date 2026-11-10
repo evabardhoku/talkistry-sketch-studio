@@ -15,7 +15,7 @@ export const COMPONENT_TYPES = [
   "header", "nav", "card", "form", "input", "button", "list", "search", "calendar", "table", "modal", "text",
 ] as const;
 export type SketchComponentType = (typeof COMPONENT_TYPES)[number];
-export interface SketchComponent { type: SketchComponentType; label: string; items?: string[] }
+export interface SketchComponent { type: SketchComponentType; label: string; items?: string[] | undefined }
 
 export const REQ_CATEGORIES = [
   "goal", "user_role", "feature", "workflow", "business_rule", "permission", "payment", "notification", "data", "acceptance", "constraint",

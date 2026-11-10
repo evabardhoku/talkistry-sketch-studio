@@ -34,7 +34,7 @@ const STEPS: { q: string; a: string; screens: { name: string; c: SketchComponent
 
 function Preview() {
   const [i, setI] = useState(0);
-  const s = STEPS[i];
+  const s = STEPS[i]!;
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-lift">
       <div className="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
