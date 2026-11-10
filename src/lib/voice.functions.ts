@@ -14,7 +14,7 @@ export const transcribeRecording = createServerFn({ method: "POST" })
     return { projectId, file };
   })
   .handler(async ({ data, context }) => {
-    const { data: allowed, error } = await context.supabase.rpc("can_edit_project", { _project: data.projectId, _user: context.userId });
+    const { data: allowed, error } = await context.supabase.rpc("can_edit_project", { _project_id: data.projectId, _user_id: context.userId });
     if (error || !allowed) throw new Error("You don't have permission to answer in this project.");
     try {
       const result = await transcribeAudio({ model: "openai/gpt-transcribe", file: data.file });
