@@ -13,7 +13,7 @@ import { buildSpec, computeReadiness } from "@/lib/spec";
 import type { Json } from "@/integrations/supabase/types";
 import type { Requirement } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/projects/$projectId_/spec")({
+export const Route = createFileRoute("/_authenticated/projects/$projectId_/specification")({
   head: () => ({ meta: [
     { title: "Product specification — SpecLoop" }, { name: "description", content: "Structured product specification generated from confirmed discovery decisions." },
     { property: "og:title", content: "Product specification — SpecLoop" }, { property: "og:description", content: "Structured product brief." },

@@ -87,10 +87,10 @@ function Workspace() {
         <h1 className="truncate text-sm font-medium">{data.project.name}</h1>
         <div className="ml-auto hidden items-center gap-3 md:flex">
           <span className="text-xs text-muted-foreground">Readiness <b className="text-foreground">{readiness.score}%</b> · {readiness.confirmed}/{readiness.total} confirmed · {readiness.openQuestions} open question{readiness.openQuestions === 1 ? "" : "s"}</span>
-          <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/spec" params={{ projectId }}><FileText className="size-4" />Specification</Link></Button>
+          <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Specification</Link></Button>
           <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
         </div>
-        <Button asChild size="sm" variant="ghost" className="ml-auto md:hidden"><Link to="/projects/$projectId/spec" params={{ projectId }}><FileText className="size-4" /></Link></Button>
+        <Button asChild size="sm" variant="ghost" className="ml-auto md:hidden"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" /></Link></Button>
       </AppHeader>
 
       {data.project.is_demo && !guideHidden && (
