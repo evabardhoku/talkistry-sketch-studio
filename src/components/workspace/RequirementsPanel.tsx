@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_LABEL, REQ_CATEGORIES, STATUS_LABEL, type Project, type Requirement, type ReqStatus } from "@/lib/types";
 import { addHumanRequirement } from "@/lib/requirements-api";
 import { RequirementItem } from "./RequirementItem";
+import { useReview } from "@/components/review/ReviewContext";
+import { can } from "@/lib/baseline";
 
 const FILTERS: (ReqStatus | "all")[] = ["all", "proposed", "unresolved", "confirmed", "deferred", "excluded"];
 
@@ -17,6 +19,9 @@ export function RequirementsPanel({ project, requirements, onChanged, onShowSour
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [cat, setCat] = useState("feature");
+  const ctx = useReview();
+  const mayConfirm = can.confirm(ctx?.myRole);
+  const mayEdit = can.edit(ctx?.myRole);
   const list = requirements.filter((r) => filter === "all" || r.status === filter);
   const count = (s: ReqStatus) => requirements.filter((r) => r.status === s).length;
   return (
@@ -39,21 +44,21 @@ export function RequirementsPanel({ project, requirements, onChanged, onShowSour
         {list.map((r) => <RequirementItem key={r.id + r.updated_at} req={r} onChanged={onChanged} onShowSource={onShowSource} />)}
       </div>
       <div className="border-t p-3">
-        {adding ? (
+        {!mayEdit ? <p className="text-center text-xs text-muted-foreground">You have read-only access.</p> : adding ? (
           <form className="space-y-2" onSubmit={async (e) => {
             e.preventDefault();
             if (!title.trim()) return;
-            try { await addHumanRequirement(project.id, { category: cat, title: title.trim(), description: "" }); setTitle(""); setAdding(false); onChanged(); }
+            try { await addHumanRequirement(project.id, { category: cat, title: title.trim(), description: "" }, mayConfirm ? "confirmed" : "proposed"); setTitle(""); setAdding(false); onChanged(); }
             catch (err) { toast.error(err instanceof Error ? err.message : "Could not add"); }
           }}>
             <select value={cat} onChange={(e) => setCat(e.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
               {REQ_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </select>
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Requirement in plain words" />
-            <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button><Button size="sm" type="submit">Add as confirmed</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button><Button size="sm" type="submit">{mayConfirm ? "Add as confirmed" : "Propose"}</Button></div>
           </form>
         ) : (
-          <Button variant="outline" size="sm" className="w-full" onClick={() => setAdding(true)}><Plus className="size-4" />Add requirement manually</Button>
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setAdding(true)}><Plus className="size-4" />{mayConfirm ? "Add requirement manually" : "Propose a requirement or constraint"}</Button>
         )}
       </div>
     </div>

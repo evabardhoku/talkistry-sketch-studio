@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { parseComponents, parseStrings, type Connection, type ScreenRow } from "@/lib/types";
 import { ScreenWireframe } from "./ScreenWireframe";
+import { CommentThread } from "@/components/review/CommentThread";
+import { useReview } from "@/components/review/ReviewContext";
+import { can } from "@/lib/baseline";
 
 export function ScreenInspector({ screen, screens, connections, onClose, onRequestChange, onSelect, busy }: {
   screen: ScreenRow; screens: ScreenRow[]; connections: Connection[]; onClose: () => void;
   onRequestChange: (text: string) => Promise<boolean>; onSelect: (id: string) => void; busy: boolean;
 }) {
   const [text, setText] = useState("");
+  const ctx = useReview();
   const name = (id: string) => screens.find((s) => s.id === id)?.name ?? "?";
   const out = connections.filter((c) => c.from_screen_id === screen.id);
   const inc = connections.filter((c) => c.to_screen_id === screen.id);
@@ -41,8 +45,9 @@ export function ScreenInspector({ screen, screens, connections, onClose, onReque
         <section><h4 className="mb-2 text-xs font-medium text-muted-foreground">Layout</h4>
           <div className="rounded-lg border bg-sketch p-3"><ScreenWireframe components={parseComponents(screen.components)} /></div>
         </section>
+        <section><h4 className="mb-2 text-xs font-medium text-muted-foreground">Review comments</h4><CommentThread key={screen.id} target={{ screen_id: screen.id }} /></section>
       </div>
-      <form className="space-y-2 border-t p-4" onSubmit={async (e) => {
+      {(!ctx || can.edit(ctx.myRole)) && <form className="space-y-2 border-t p-4" onSubmit={async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
         if (await onRequestChange(`Change request for the "${screen.name}" screen: ${text.trim()}`)) setText("");
@@ -50,7 +55,7 @@ export function ScreenInspector({ screen, screens, connections, onClose, onReque
         <label className="text-xs font-medium text-muted-foreground" htmlFor="change">Request a change to this screen</label>
         <Textarea id="change" rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Parents should also filter by price" />
         <Button type="submit" size="sm" className="w-full" disabled={busy || !text.trim()}>{busy ? <Loader2 className="size-4 animate-spin" /> : null}Send to discovery</Button>
-      </form>
+      </form>}
     </aside>
   );
 }

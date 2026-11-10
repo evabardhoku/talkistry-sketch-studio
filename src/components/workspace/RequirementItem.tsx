@@ -42,9 +42,9 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
           <Button size="sm" disabled={saving || !title.trim()} onClick={() => run(async () => {
-            await decideRequirement(req.project_id, req.id, { title: title.trim(), description: desc.trim(), status: "confirmed" }, "edited", "Edited and confirmed by human");
+            await decideRequirement(req.project_id, req.id, { title: title.trim(), description: desc.trim(), status: mayConfirm ? "confirmed" : "proposed" }, "edited", mayConfirm ? "Edited and confirmed by human" : "Edited and proposed");
             setEditing(false);
-          })}>Save & confirm</Button>
+          })}>{mayConfirm ? "Save & confirm" : "Save as proposal"}</Button>
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
           <div className="mb-1 flex flex-wrap items-center gap-1.5">
             <StatusBadge status={req.status} />
             <span className="text-[11px] text-muted-foreground">{CATEGORY_LABEL[req.category] ?? req.category}</span>
-            {req.origin === "human" && <span className="text-[11px] text-muted-foreground">· added by human</span>}
+            <span className="text-[11px] text-muted-foreground">· {req.origin === "human" ? "added by human" : "suggested by AI"}</span>
           </div>
           <p className="text-sm font-medium leading-snug">{req.title}</p>
           {!compact && req.description && <p className="mt-0.5 text-xs text-muted-foreground">{req.description}</p>}
@@ -66,16 +66,35 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
               <MessageSquareQuote className="mt-0.5 size-3 shrink-0" />“{req.evidence}”
             </button>
           )}
+          {ctx && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span>Updated {formatDistanceToNow(new Date(req.updated_at), { addSuffix: true })}</span>
+              {can.assign(role) ? (
+                <label className="flex items-center gap-1">Reviewer
+                  <select className="rounded border bg-background px-1 py-0.5" value={req.reviewer_id ?? ""} disabled={saving} aria-label="Responsible reviewer"
+                    onChange={(e) => run(async () => { const { error } = await supabase.from("requirements").update({ reviewer_id: e.target.value || null }).eq("id", req.id); if (error) throw new Error(error.message); })}>
+                    <option value="">Unassigned</option>
+                    {ctx.people.filter((p) => !p.baseline_id).map((p) => <option key={p.user_id} value={p.user_id}>{p.display_name || p.email}</option>)}
+                  </select>
+                </label>
+              ) : <span>Reviewer: {req.reviewer_id ? personName(ctx.people, req.reviewer_id) : "Unassigned"}</span>}
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap gap-1">
-        {req.status !== "confirmed" && <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={saving} onClick={() => set("confirmed", "confirmed")}><Check className="size-3" />Confirm</Button>}
+        {mayConfirm && req.status !== "confirmed" && <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={saving} onClick={() => set("confirmed", "confirmed")}><Check className="size-3" />Confirm</Button>}
+        {editable && <>
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={saving} onClick={() => setEditing(true)}><Pencil className="size-3" />Edit</Button>
         {req.status !== "deferred" && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={saving} onClick={() => set("deferred", "deferred")}><Clock className="size-3" />Defer</Button>}
         {req.status !== "excluded" && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={saving} onClick={() => set("excluded", "excluded")}><Ban className="size-3" />Out of scope</Button>}
         {req.status !== "proposed" && req.status !== "unresolved" && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" disabled={saving} onClick={() => set("proposed", "reopened")}><Undo2 className="size-3" />Reopen</Button>}
-        <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100" disabled={saving} onClick={() => run(() => deleteRequirement(req.id))} aria-label="Delete requirement"><Trash2 className="size-3" /></Button>
+        </>}
+        {ctx && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setThread(thread ? null : "comment")}><MessageSquare className="size-3" />{comments.length ? `${comments.length}${open ? ` · ${open} open` : ""}` : "Comment"}</Button>}
+        {ctx && editable && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setThread("clarification")}><HelpCircle className="size-3" />Ask</Button>}
+        <Button size="sm" variant="ghost" className={`ml-auto h-7 px-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 ${!ctx || role === "owner" || role === "editor" ? "" : "hidden"}`} disabled={saving} onClick={() => run(() => deleteRequirement(req.id))} aria-label="Delete requirement"><Trash2 className="size-3" /></Button>
       </div>
+      {thread && <div className="mt-2 border-t pt-2"><CommentThread key={thread} target={{ requirement_id: req.id }} defaultKind={thread} /></div>}
     </div>
   );
 }
