@@ -12,7 +12,9 @@ describe("computeReadiness", () => {
     expect(r.total).toBe(1);
     expect(r.score).toBe(100);
   });
-  it("penalises open questions", () => {
-    expect(computeReadiness([{ status: "confirmed" }], [{ status: "open" }]).score).toBe(98);
+  it("optional questions never reduce confirmed requirement readiness", () => {
+    const r=computeReadiness([{ status: "confirmed" }], [{ status: "open",priority:'secondary' }]);
+    expect(r.score).toBe(100); expect(r.decisionBacklog).toBe(0);expect(r.label).toBe('Confirmed');
   });
+  it('critical deferred decisions require clarification',()=>{const r=computeReadiness([{status:'confirmed'}],[{status:'deferred',priority:'critical'}]);expect(r.label).toBe('Needs clarification');expect(r.decisionBacklog).toBe(1);});
 });
