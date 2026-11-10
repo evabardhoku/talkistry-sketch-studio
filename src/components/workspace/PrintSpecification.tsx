@@ -15,7 +15,7 @@ export function PrintSpecification({ data }: { data: Workspace }) {
     {section("Proposed scope", spec.proposed)}{section("Unresolved requirements", spec.unresolved)}{section("Deferred and excluded scope", [...spec.deferred, ...spec.excluded])}
     <section><h2>Unresolved questions</h2>{spec.openQuestions.length ? <ul>{spec.openQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul> : <p>None recorded.</p>}</section>
     <section><h2>Decisions</h2>{data.decisions.map((d) => <article key={d.id}><h3>{d.action} · {d.created_at}</h3><p>{d.note || "No note recorded."}</p><p>Actor: {data.people.find((p) => p.user_id === d.decided_by)?.display_name || d.decided_by || "Not recorded"}</p></article>)}{!data.decisions.length && <p>None recorded.</p>}</section>
-    <section><h2>Stakeholder review</h2>{data.comments.map((c) => <article key={c.id}><h3>{c.kind} · {c.status}</h3><p>{c.body}</p></article>)}{!data.comments.length && <p>None recorded.</p>}</section>
+    <section><h2>Stakeholder review</h2>{data.comments.map((c) => <article key={c.id}><h3>{c.kind} · {c.resolved_at ? "resolved" : "open"}</h3><p>{c.body}</p></article>)}{!data.comments.length && <p>None recorded.</p>}</section>
     <section><h2>Version and approval information</h2><p>This printout describes the live draft. Baseline approvals apply only to frozen versions, not later edits.</p>{doc.approvals.map((v) => <article key={v.id}><h3>Version {v.version}</h3><p>Approved: {v.approvedAt || "Not recorded"} · By: {v.approver || v.approvedBy || "Not recorded"}</p><p>{v.notes}</p></article>)}{!doc.approvals.length && <p>No approved baseline.</p>}</section>
   </div>;
 }

@@ -31,7 +31,7 @@ export function exportMarkdown(doc: ExportDocument) {
   if (!doc.screens.length) lines.push("Not recorded.");
   for (const s of doc.screens) {
     lines.push("", `### ${s.name}`, `Role: ${s.user_role || "Not recorded"}`, s.purpose);
-    if (Array.isArray(s.components)) for (const c of s.components) if (c && typeof c === "object" && "label" in c) lines.push(`- ${c.label}`);
+    if (Array.isArray(s.components)) for (const c of s.components) if (c && typeof c === "object" && "label" in c) lines.push(`- ${c['label']}`);
     for (const c of doc.workflows.filter((c) => c.from_screen_id === s.id)) lines.push(`- ${c.label || "Navigate"} → ${doc.screens.find((x) => x.id === c.to_screen_id)?.name ?? c.to_screen_id}`);
   }
   section("Confirmed workflow requirements", doc.requirements.filter((r) => r.status === "confirmed" && r.category === "workflow"));
@@ -41,7 +41,7 @@ export function exportMarkdown(doc: ExportDocument) {
   for (const d of doc.decisions) lines.push(`- ${d.action} · ${d.note || "No note"} · ${d.created_at} · actor: ${d.decided_by || "Not recorded"} · requirement: ${d.requirement_id || "Project"}`);
   if (!doc.decisions.length) lines.push("None recorded.");
   lines.push("", "## Collaboration review");
-  for (const c of doc.comments) lines.push(`- [${c.status}] ${c.kind}: ${c.body} · ${c.created_at} · author: ${c.author_id}`);
+  for (const c of doc.comments) lines.push(`- [${c.resolved_at ? "resolved" : "open"}] ${c.kind}: ${c.body} · ${c.created_at} · author: ${c.author_id}`);
   if (!doc.comments.length) lines.push("None recorded.");
   lines.push("", "## Version and approval information", "This document describes the live saved draft. Approvals below refer only to their frozen snapshots, not subsequent edits.");
   for (const v of doc.approvals) lines.push(`- Version ${v.version} · ${v.approvedAt || "Not recorded"} · approver: ${v.approver || v.approvedBy || "Not recorded"}${v.notes ? ` · ${v.notes}` : ""}`);
