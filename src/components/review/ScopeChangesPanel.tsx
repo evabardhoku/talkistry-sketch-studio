@@ -15,7 +15,7 @@ import { personName, useReview } from "./ReviewContext";
 export type ScopeChange = Database["public"]["Tables"]["scope_changes"]["Row"];
 const KIND: Record<string, string> = { new_functionality: "New functionality", changed_behavior: "Changed behaviour", conflict: "Conflicts with baseline", removed_assumption: "Removes an assumption" };
 
-function ScopeCard({ c, version }: { c: ScopeChange; version?: number }) {
+function ScopeCard({ c, version }: { c: ScopeChange; version: number | undefined }) {
   const ctx = useReview()!;
   const [est, setEst] = useState(c.developer_estimate ?? "");
   const [thread, setThread] = useState(false);
