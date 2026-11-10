@@ -29,6 +29,13 @@
       "when": 1794348701459,
       "tag": "0003_meeting_turn_guard_and_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794348752067,
+      "tag": "0004_discovery_claim_identity",
+      "breakpoints": true
     }
   ]
 }
