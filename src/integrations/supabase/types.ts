@@ -520,7 +520,7 @@ export type Database = {
       seed_demo_project: { Args: { _user: string }; Returns: string }
     }
     Enums: {
-      member_role: "owner" | "editor" | "viewer"
+      member_role: "owner" | "editor" | "viewer" | "client" | "developer"
       question_status: "open" | "answered" | "skipped"
       req_status:
         | "confirmed"
@@ -655,7 +655,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      member_role: ["owner", "editor", "viewer"],
+      member_role: ["owner", "editor", "viewer", "client", "developer"],
       question_status: ["open", "answered", "skipped"],
       req_status: [
         "confirmed",
