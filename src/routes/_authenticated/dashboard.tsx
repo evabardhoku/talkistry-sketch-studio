@@ -76,7 +76,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="mx-auto max-w-5xl px-5 py-10">
+      <div className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div><h1 className="font-display text-4xl">Projects</h1><p className="mt-1 text-sm text-muted-foreground">Resume a discovery session or start a new one.</p></div>
           <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={demoBusy} onClick={createDemo}>{demoBusy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}Tutoring demo</Button><NewProjectDialog /></div>
@@ -113,7 +113,7 @@ function Dashboard() {
             })}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

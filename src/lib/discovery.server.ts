@@ -18,6 +18,7 @@ Rules:
 - If the user skipped the question, don't push; move to another valuable topic.
 - If the user requests a change to a screen, update that screen accordingly.
 - next_question null only if discovery feels complete.
+- If current_open_question remains unanswered and wasn't skipped, next_question must repeat it. Do not switch to a different question until the current one is answered or explicitly skipped.
 - scope_changes: ONLY when APPROVED_BASELINE is present. Compare the client's latest message against the approved baseline requirements. Flag new functionality not in the baseline, changed behavior of a baseline item, a conflict with a baseline item, or a removed assumption. baseline_ref = index of the affected baseline requirement, or -1 for brand-new functionality. after_quote = exact words from the client's latest message. explanation = plain-language reason it may affect scope. Never estimate cost or time. Empty array if nothing differs.`;
 
 function extractText(res: unknown): string {

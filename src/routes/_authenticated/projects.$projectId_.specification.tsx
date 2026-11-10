@@ -52,7 +52,7 @@ function SpecPage() {
         <Link to="/projects/$projectId" params={{ projectId }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Workspace</Link>
         <Button asChild size="sm" className="ml-auto"><Link to="/projects/$projectId/versions" params={{ projectId }}><Save className="size-4" />Versions & approval</Link></Button>
       </AppHeader>
-      <main className="mx-auto max-w-4xl px-5 py-10">
+      <div className="mx-auto max-w-4xl px-5 py-10">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Product specification · readiness {rd.score}%{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
         <h1 className="mt-2 break-words font-display text-4xl md:text-5xl">{spec.overview.name}</h1>
         <div className="mt-5"><ExportControls data={data} /></div>
@@ -94,7 +94,7 @@ function SpecPage() {
         <Section n={9} title="Proposed scope (pending approval)" empty={!spec.proposed.length}>{list(spec.proposed)}</Section>
         <Section n={10} title="Deferred & excluded scope" empty={!spec.deferred.length && !spec.excluded.length}>{list([...spec.deferred, ...spec.excluded])}</Section>
 
-      </main>
+      </div>
     </div>
     <PrintSpecification data={data} />
     </ReviewContext.Provider>

@@ -69,7 +69,7 @@ function VersionsPage() {
         {!restricted && <Link to="/projects/$projectId" params={{ projectId }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Workspace</Link>}
         <span className="truncate text-sm font-medium">{access.project.name}</span>
       </AppHeader>
-      <main className="mx-auto max-w-5xl px-5 py-10">
+      <div className="mx-auto max-w-5xl px-5 py-10">
         <h1 className="font-display text-5xl">Approved versions</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">{restricted ? "You've been given read-only access to this approved version." : "Each approval freezes confirmed requirements, open questions and the screen flow. Approved versions are never overwritten; new changes are compared against the latest one."}</p>
 
@@ -148,7 +148,7 @@ function VersionsPage() {
           </div>
         )}
         {!restricted && <p className="mt-10 text-xs text-muted-foreground"><RefreshCw className="mr-1 inline size-3" />Requests made after approval are flagged as potential scope changes in the workspace.</p>}
-      </main>
+      </div>
     </div>
   );
 }

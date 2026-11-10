@@ -67,7 +67,8 @@ export function SketchCanvas({ screens, connections, selectedId, onSelect, recen
           })}
         </svg>
         {screens.map((s) => {
-          const p = pos.get(s.id)!;
+          const p = pos.get(s.id);
+          if (!p) return null;
           const unresolved = parseStrings(s.unresolved);
           const recent = recentIds.has(s.id);
           return (

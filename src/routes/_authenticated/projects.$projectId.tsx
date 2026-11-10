@@ -133,6 +133,11 @@ function Workspace() {
         </div>
         <Button asChild size="sm" variant="ghost" className={`${meeting ? "hidden" : "ml-auto 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open specification"><FileText className="size-4" /></Link></Button>
       </AppHeader>
+      {!meeting && <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-card px-3 py-2 2xl:hidden">
+        <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
+        <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions</Link></Button>
+        {!isMobile && <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>}
+      </div>}
 
       {data.project.is_demo && !guideHidden && !meeting && (
         <div className="flex items-start gap-3 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">
