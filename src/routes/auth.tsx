@@ -17,12 +17,18 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const nav = useNavigate();
+  const navigate = ({ to }: { to: "/dashboard" }) => {
+    const next = sessionStorage.getItem("specloop:after-auth");
+    sessionStorage.removeItem("specloop:after-auth");
+    if (next && next.startsWith("/") && !next.startsWith("//")) nav({ href: next }); else nav({ to });
+  };
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [name, setName] = useState("");
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<string | null>(null); const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => { if (data.user) navigate({ to: "/dashboard" }); }); }, [navigate]);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => { if (data.user) navigate({ to: "/dashboard" }); }); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr(null); setMsg(null);
