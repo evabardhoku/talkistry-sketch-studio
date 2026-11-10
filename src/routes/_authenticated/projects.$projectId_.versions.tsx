@@ -14,8 +14,8 @@ import { CATEGORY_LABEL } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId_/versions")({
   head: () => ({ meta: [
-    { title: "Approved versions — SpecLoop" }, { name: "description", content: "Approved specification baselines and the differences between them." },
-    { property: "og:title", content: "Approved versions — SpecLoop" }, { property: "og:description", content: "Specification baselines and version history." },
+    { title: "Approved versions — Talkistry" }, { name: "description", content: "Approved specification baselines and the differences between them." },
+    { property: "og:title", content: "Approved versions — Talkistry" }, { property: "og:description", content: "Specification baselines and version history." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: async ({ context, params }) => {
@@ -81,7 +81,7 @@ function VersionsPage() {
             <AlertDialog>
               <AlertDialogTrigger asChild><Button className="mt-2" disabled={busy}>{busy ? <Loader2 className="size-4 animate-spin" /> : <BadgeCheck className="size-4" />}Approve baseline</Button></AlertDialogTrigger>
               <AlertDialogContent>
-                <AlertDialogHeader><AlertDialogTitle>Approve this specification?</AlertDialogTitle>
+                <AlertDialogHeader><AlertDialogTitle>Approve this product blueprint?</AlertDialogTitle>
                   <AlertDialogDescription>You're approving it as the project owner. It will be stored permanently with your name and the current time.</AlertDialogDescription></AlertDialogHeader>
                 <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={approve}>I approve</AlertDialogAction></AlertDialogFooter>
               </AlertDialogContent>

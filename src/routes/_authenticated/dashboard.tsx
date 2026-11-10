@@ -18,8 +18,8 @@ import { PENDING_IDEA_KEY } from "@/lib/pending";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
-    { title: "Projects — SpecLoop" }, { name: "description", content: "Your discovery projects and specification readiness." },
-    { property: "og:title", content: "Projects — SpecLoop" }, { property: "og:description", content: "Your discovery projects." },
+    { title: "Projects — Talkistry" }, { name: "description", content: "Your discovery projects and specification readiness." },
+    { property: "og:title", content: "Projects — Talkistry" }, { property: "og:description", content: "Your discovery projects." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(projectsQuery()),
@@ -47,8 +47,8 @@ function NewProjectDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button><Plus className="size-4" />New project</Button></DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle className="font-display text-2xl font-normal">Start a discovery session</DialogTitle>
-          <DialogDescription>Describe the idea in plain words. SpecLoop will ask follow-up questions one at a time.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle className="font-display text-2xl font-normal">Start a discovery meeting</DialogTitle>
+          <DialogDescription>Describe the idea in plain words. Talkistry will ask follow-up questions one at a time.</DialogDescription></DialogHeader>
         <form onSubmit={create} className="space-y-4">
           <div className="space-y-1"><Label htmlFor="pname">Project name</Label><Input id="pname" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Neighbourhood bike repair" /></div>
           <div className="space-y-1"><Label htmlFor="idea">The idea (optional)</Label><Textarea id="idea" rows={4} value={idea} onChange={(e) => setIdea(e.target.value)} placeholder="I want an app where…" /></div>
@@ -78,7 +78,7 @@ function Dashboard() {
       <AppHeader />
       <div className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div><h1 className="font-display text-4xl">Projects</h1><p className="mt-1 text-sm text-muted-foreground">Resume a discovery session or start a new one.</p></div>
+          <div><h1 className="font-display text-4xl">Projects</h1><p className="mt-1 text-sm text-muted-foreground">Resume a discovery meeting or start a new one.</p></div>
           <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={demoBusy} onClick={createDemo}>{demoBusy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}Tutoring demo</Button><NewProjectDialog /></div>
         </div>
         {data.projects.length === 0 ? (
