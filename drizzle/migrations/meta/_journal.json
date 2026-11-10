@@ -50,6 +50,13 @@
       "when": 1794352704429,
       "tag": "0006_meeting_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794353167805,
+      "tag": "0007_meeting_state_guards",
+      "breakpoints": true
     }
   ]
 }
