@@ -21,7 +21,9 @@ export const discoveryTurnSchema = z.object({
     question: S(300),
     topic: S(40),
     rationale: S(300),
+    priority: z.enum(["critical", "important", "secondary"]).default("important"),
   }).nullable(),
+  backlog_questions: z.array(z.object({ question: S(300), topic: S(40), rationale: S(300), priority: z.enum(["critical", "important", "secondary"]), stage_key: S(40), screen_key: S(40), requirement_title: S(140), suggested_answers: z.array(S(120)).max(5) })).max(8).default([]),
   screens: z.array(z.object({
     key: z.string().transform((k) => k.toLowerCase().replace(/[^a-z0-9_]+/g, "_").slice(0, 40) || "screen"),
     name: S(60),
@@ -52,7 +54,7 @@ const str = (max: number) => ({ type: "string", maxLength: max });
 // Hand-written JSON schema mirroring the zod schema (strict mode: all keys required).
 export const discoveryTurnJsonSchema = {
   type: "object", additionalProperties: false,
-  required: ["reply", "change_summary", "current_question_answered", "requirement_suggestions", "ambiguities", "next_question", "screens", "connections", "scope_changes"],
+  required: ["reply", "change_summary", "current_question_answered", "requirement_suggestions", "ambiguities", "next_question", "backlog_questions", "screens", "connections", "scope_changes"],
   properties: {
     reply: str(1200),
     change_summary: str(400),
@@ -62,8 +64,9 @@ export const discoveryTurnJsonSchema = {
       properties: { category: { type: "string", enum: [...REQ_CATEGORIES] }, title: str(140), description: str(600),
         status: { type: "string", enum: ["proposed", "unresolved"] }, evidence_quote: str(400) } } },
     ambiguities: { type: "array", items: str(300) },
-    next_question: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["question", "topic", "rationale"],
-      properties: { question: str(300), topic: str(40), rationale: str(300) } }] },
+    next_question: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["question", "topic", "rationale", "priority"],
+      properties: { question: str(300), topic: str(40), rationale: str(300), priority: { type: "string", enum: ["critical", "important", "secondary"] } } }] },
+    backlog_questions: { type: "array", items: { type: "object", additionalProperties: false, required: ["question","topic","rationale","priority","stage_key","screen_key","requirement_title","suggested_answers"], properties: {question:str(300),topic:str(40),rationale:str(300),priority:{type:"string",enum:["critical","important","secondary"]},stage_key:str(40),screen_key:str(40),requirement_title:str(140),suggested_answers:{type:"array",items:str(120)}} } },
     screens: { type: "array", items: { type: "object", additionalProperties: false,
       required: ["key", "name", "purpose", "user_role", "components", "unresolved", "change_note"],
       properties: { key: { type: "string", pattern: "^[a-z0-9_]{2,40}$" }, name: str(60), purpose: str(240), user_role: str(40),

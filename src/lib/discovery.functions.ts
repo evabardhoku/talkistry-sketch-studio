@@ -7,6 +7,8 @@ const input = z.object({
   content: z.string().trim().max(4000),
   skip: z.boolean().default(false),
   requestId: z.string().uuid(),
+  questionId: z.string().uuid().optional(),
+  focusScreenId: z.string().uuid().optional(),
 });
 
 /**

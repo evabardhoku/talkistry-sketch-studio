@@ -14,7 +14,7 @@ export const projectsQuery = () => queryOptions({
     const [projects, reqs, qs] = await Promise.all([
       must(supabase.from("projects").select("*").order("updated_at", { ascending: false })),
       must(supabase.from("requirements").select("project_id,status")),
-      must(supabase.from("clarification_questions").select("project_id,status,question")),
+      must(supabase.from("clarification_questions").select("project_id,status,question,priority")),
     ]);
     return { projects, reqs, qs };
   },
@@ -33,15 +33,16 @@ export const workspaceQuery = (projectId: string) => queryOptions({
       must(supabase.from("decisions").select("*").eq("project_id", projectId).order("created_at", { ascending: false })),
       must(supabase.from("specification_versions").select("*").eq("project_id", projectId).order("version", { ascending: false })),
     ]);
-    const [comments, scopeChanges, people, session] = await Promise.all([
+    const [comments, scopeChanges, people, session, meetings] = await Promise.all([
       must(supabase.from("review_comments").select("*").eq("project_id", projectId).order("created_at")),
       must(supabase.from("scope_changes").select("*").eq("project_id", projectId).order("created_at", { ascending: false })),
       must(supabase.rpc("get_project_people", { _project_id: projectId })),
       supabase.auth.getSession(),
+      must(supabase.from("meetings").select("*").eq("project_id", projectId).order("created_at", { ascending: false })),
     ]);
     const meId = session.data.session?.user.id ?? null;
     const myRole = people.find((p) => p.user_id === meId)?.role ?? null;
-    return { project, messages, requirements, questions, screens, connections, decisions, versions, comments, scopeChanges, people, meId, myRole };
+    return { project, messages, requirements, questions, screens, connections, decisions, versions, comments, scopeChanges, people, meId, myRole, meetings };
   },
 });
 export type Workspace = Awaited<ReturnType<NonNullable<ReturnType<typeof workspaceQuery>["queryFn"]>>>;
