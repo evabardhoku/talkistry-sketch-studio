@@ -1,16 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { RequirementItem } from "@/components/workspace/RequirementItem";
 import { workspaceQuery } from "@/lib/queries";
 import { buildSpec, computeReadiness } from "@/lib/spec";
-import type { Json } from "@/integrations/supabase/types";
+import { ReviewContext } from "@/components/review/ReviewContext";
 import type { Requirement } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId_/specification")({
@@ -36,30 +34,23 @@ function SpecPage() {
   const { projectId } = Route.useParams();
   const qc = useQueryClient();
   const { data } = useSuspenseQuery(workspaceQuery(projectId));
-  const [saving, setSaving] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: ["workspace", projectId] });
   const spec = buildSpec(data.project, data.requirements, data.questions, data.screens, data.connections);
   const rd = computeReadiness(data.requirements, data.questions);
   const msgById = new Map(data.messages.map((m) => [m.id, m]));
   const list = (rs: Requirement[]) => <div className="grid gap-2 md:grid-cols-2">{rs.map((r) => <RequirementItem key={r.id + r.updated_at} req={r} onChanged={refresh} />)}</div>;
 
-  async function saveVersion() {
-    setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    const version = (data.versions[0]?.version ?? 0) + 1;
-    const { error } = await supabase.from("specification_versions").insert({ project_id: projectId, version, content: spec as unknown as Json, created_by: u.user?.id ?? null });
-    setSaving(false);
-    if (error) toast.error(error.message); else { toast.success(`Saved as version ${version}`); refresh(); }
-  }
 
+  const baselines = data.versions.filter((v) => v.kind === "baseline");
   return (
+    <ReviewContext.Provider value={{ projectId, meId: data.meId, myRole: data.myRole, people: data.people, comments: data.comments, onChanged: refresh }}>
     <div className="min-h-screen">
       <AppHeader>
         <Link to="/projects/$projectId" params={{ projectId }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Workspace</Link>
-        <Button size="sm" className="ml-auto" onClick={saveVersion} disabled={saving}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}Save version</Button>
+        <Button asChild size="sm" className="ml-auto"><Link to="/projects/$projectId/versions" params={{ projectId }}><Save className="size-4" />Versions & approval</Link></Button>
       </AppHeader>
       <main className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Product specification · readiness {rd.score}%{data.versions[0] && ` · v${data.versions[0].version} saved ${formatDistanceToNow(new Date(data.versions[0].created_at), { addSuffix: true })}`}</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Product specification · readiness {rd.score}%{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
         <h1 className="mt-2 font-display text-5xl">{spec.overview.name}</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">Built only from human-confirmed requirements. Proposed and unresolved items are listed separately until someone confirms them. Edits here update the workspace too.</p>
 
@@ -98,13 +89,8 @@ function SpecPage() {
         <Section n={9} title="Proposed scope (pending approval)" empty={!spec.proposed.length}>{list(spec.proposed)}</Section>
         <Section n={10} title="Deferred & excluded scope" empty={!spec.deferred.length && !spec.excluded.length}>{list([...spec.deferred, ...spec.excluded])}</Section>
 
-        {data.versions.length > 0 && (
-          <section className="border-t py-8 text-sm text-muted-foreground">
-            <h2 className="mb-2 font-medium text-foreground">Saved versions</h2>
-            <ul>{data.versions.map((v) => <li key={v.id}>v{v.version} · {new Date(v.created_at).toLocaleString()}</li>)}</ul>
-          </section>
-        )}
       </main>
     </div>
+    </ReviewContext.Provider>
   );
 }

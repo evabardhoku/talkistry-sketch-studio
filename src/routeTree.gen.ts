@@ -13,8 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
 import { Route as AuthenticatedProjectsProjectIdSpecificationRouteImport } from './routes/_authenticated/projects.$projectId_.specification'
+import { Route as AuthenticatedProjectsProjectIdVersionsRouteImport } from './routes/_authenticated/projects.$projectId_.versions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,6 +37,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInviteTokenRoute =
+  AuthenticatedInviteTokenRouteImport.update({
+    id: '/invite/$token',
+    path: '/invite/$token',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjectsProjectIdRoute =
   AuthenticatedProjectsProjectIdRouteImport.update({
     id: '/projects/$projectId',
@@ -47,20 +55,30 @@ const AuthenticatedProjectsProjectIdSpecificationRoute =
     path: '/projects/$projectId/specification',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProjectsProjectIdVersionsRoute =
+  AuthenticatedProjectsProjectIdVersionsRouteImport.update({
+    id: '/projects/$projectId_/versions',
+    path: '/projects/$projectId/versions',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/projects/$projectId/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
+  '/projects/$projectId/versions': typeof AuthenticatedProjectsProjectIdVersionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/projects/$projectId/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
+  '/projects/$projectId/versions': typeof AuthenticatedProjectsProjectIdVersionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,8 +86,10 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/projects/$projectId_/specification': typeof AuthenticatedProjectsProjectIdSpecificationRoute
+  '/_authenticated/projects/$projectId_/versions': typeof AuthenticatedProjectsProjectIdVersionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -77,23 +97,29 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/$projectId/specification'
+    | '/projects/$projectId/versions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/$projectId/specification'
+    | '/projects/$projectId/versions'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/invite/$token'
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/projects/$projectId_/specification'
+    | '/_authenticated/projects/$projectId_/versions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/invite/$token': {
+      id: '/_authenticated/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof AuthenticatedInviteTokenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/$projectId': {
       id: '/_authenticated/projects/$projectId'
       path: '/projects/$projectId'
@@ -146,20 +179,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsProjectIdSpecificationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/projects/$projectId_/versions': {
+      id: '/_authenticated/projects/$projectId_/versions'
+      path: '/projects/$projectId/versions'
+      fullPath: '/projects/$projectId/versions'
+      preLoaderRoute: typeof AuthenticatedProjectsProjectIdVersionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInviteTokenRoute: typeof AuthenticatedInviteTokenRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedProjectsProjectIdSpecificationRoute: typeof AuthenticatedProjectsProjectIdSpecificationRoute
+  AuthenticatedProjectsProjectIdVersionsRoute: typeof AuthenticatedProjectsProjectIdVersionsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInviteTokenRoute: AuthenticatedInviteTokenRoute,
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedProjectsProjectIdSpecificationRoute:
     AuthenticatedProjectsProjectIdSpecificationRoute,
+  AuthenticatedProjectsProjectIdVersionsRoute:
+    AuthenticatedProjectsProjectIdVersionsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -35,3 +35,5 @@ use the editor.
 - Sketch rendering is deterministic from `product_screens.components` (fixed component vocabulary in `src/lib/types.ts`); no AI images for wireframes.
 - Access is via `project_members` + `is_project_member`/`can_edit_project` security-definer functions — ready for multiple collaborators.
 - New users get a fictional sample project via `seed_demo_project` trigger on signup.
+- Collaboration permissions live in the database (member role, access expiry, baseline-only sharing via `project_members`; triggers guard confirm/estimate/accept); `can` in `src/lib/baseline.ts` only mirrors them to hide controls.
+- Approved baselines are created only by the `approve_baseline` RPC (owner-only, snapshot built server-side) and are immutable; scope changes compare new requests against the latest baseline inside the discovery AI turn.

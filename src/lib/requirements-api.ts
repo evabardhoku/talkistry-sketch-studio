@@ -10,11 +10,11 @@ export async function decideRequirement(projectId: string, reqId: string, patch:
   if (error) throw new Error(error.message);
 }
 
-export async function addHumanRequirement(projectId: string, r: { category: string; title: string; description: string }) {
+export async function addHumanRequirement(projectId: string, r: { category: string; title: string; description: string }, status: "confirmed" | "proposed" = "confirmed") {
   const { data: u } = await supabase.auth.getUser();
-  const ins = await supabase.from("requirements").insert({ project_id: projectId, ...r, status: "confirmed", origin: "human" }).select("id").single();
+  const ins = await supabase.from("requirements").insert({ project_id: projectId, ...r, status, origin: "human" }).select("id").single();
   if (ins.error) throw new Error(ins.error.message);
-  const dec = await supabase.from("decisions").insert({ project_id: projectId, requirement_id: ins.data.id, action: "added", note: "Added manually", decided_by: u.user?.id ?? null }).select("id").single();
+  const dec = await supabase.from("decisions").insert({ project_id: projectId, requirement_id: ins.data.id, action: status === "confirmed" ? "added" : "proposed", note: status === "confirmed" ? "Added and confirmed manually" : "Proposed by human", decided_by: u.user?.id ?? null }).select("id").single();
   if (dec.data) await supabase.from("requirements").update({ last_decision_id: dec.data.id }).eq("id", ins.data.id);
 }
 

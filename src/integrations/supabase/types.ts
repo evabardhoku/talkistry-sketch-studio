@@ -294,26 +294,102 @@ export type Database = {
         }
         Relationships: []
       }
+      project_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          access_expires_at: string | null
+          baseline_id: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          link_expires_at: string
+          project_id: string
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          access_expires_at?: string | null
+          baseline_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          link_expires_at?: string
+          project_id: string
+          revoked_at?: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          access_expires_at?: string | null
+          baseline_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          link_expires_at?: string
+          project_id?: string
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitations_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "specification_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
+          baseline_id: string | null
           created_at: string
+          expires_at: string | null
           project_id: string
           role: Database["public"]["Enums"]["member_role"]
           user_id: string
         }
         Insert: {
+          baseline_id?: string | null
           created_at?: string
+          expires_at?: string | null
           project_id: string
           role?: Database["public"]["Enums"]["member_role"]
           user_id: string
         }
         Update: {
+          baseline_id?: string | null
           created_at?: string
+          expires_at?: string | null
           project_id?: string
           role?: Database["public"]["Enums"]["member_role"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_members_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "specification_versions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]
@@ -363,6 +439,7 @@ export type Database = {
           last_decision_id: string | null
           origin: string
           project_id: string
+          reviewer_id: string | null
           source_message_id: string | null
           status: Database["public"]["Enums"]["req_status"]
           title: string
@@ -377,6 +454,7 @@ export type Database = {
           last_decision_id?: string | null
           origin?: string
           project_id: string
+          reviewer_id?: string | null
           source_message_id?: string | null
           status?: Database["public"]["Enums"]["req_status"]
           title: string
@@ -391,6 +469,7 @@ export type Database = {
           last_decision_id?: string | null
           origin?: string
           project_id?: string
+          reviewer_id?: string | null
           source_message_id?: string | null
           status?: Database["public"]["Enums"]["req_status"]
           title?: string
@@ -420,28 +499,196 @@ export type Database = {
           },
         ]
       }
+      review_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          project_id: string
+          requirement_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          scope_change_id: string | null
+          screen_id: string | null
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id: string
+          requirement_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          scope_change_id?: string | null
+          screen_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          project_id?: string
+          requirement_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          scope_change_id?: string | null
+          screen_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_comments_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_comments_scope_change_id_fkey"
+            columns: ["scope_change_id"]
+            isOneToOne: false
+            referencedRelation: "scope_changes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_comments_screen_id_fkey"
+            columns: ["screen_id"]
+            isOneToOne: false
+            referencedRelation: "product_screens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_changes: {
+        Row: {
+          after_text: string
+          baseline_id: string
+          before_requirement_id: string | null
+          before_text: string | null
+          created_at: string
+          developer_estimate: string | null
+          estimate_by: string | null
+          explanation: string
+          id: string
+          kind: string
+          project_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_message_id: string | null
+          status: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          after_text: string
+          baseline_id: string
+          before_requirement_id?: string | null
+          before_text?: string | null
+          created_at?: string
+          developer_estimate?: string | null
+          estimate_by?: string | null
+          explanation?: string
+          id?: string
+          kind: string
+          project_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_message_id?: string | null
+          status?: string
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          after_text?: string
+          baseline_id?: string
+          before_requirement_id?: string | null
+          before_text?: string | null
+          created_at?: string
+          developer_estimate?: string | null
+          estimate_by?: string | null
+          explanation?: string
+          id?: string
+          kind?: string
+          project_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_message_id?: string | null
+          status?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_changes_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "specification_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_changes_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       specification_versions: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           content: Json
           created_at: string
           created_by: string | null
           id: string
+          kind: string
+          notes: string | null
           project_id: string
           version: number
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           content: Json
           created_at?: string
           created_by?: string | null
           id?: string
+          kind?: string
+          notes?: string | null
           project_id: string
           version: number
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           content?: Json
           created_at?: string
           created_by?: string | null
           id?: string
+          kind?: string
+          notes?: string | null
           project_id?: string
           version?: number
         }
@@ -509,7 +756,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { _token: string }; Returns: string }
+      approve_baseline: {
+        Args: { _notes: string; _project_id: string }
+        Returns: string
+      }
       can_edit_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      get_invitation: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          project_name: string
+          reason: string
+          role: string
+          valid: boolean
+        }[]
+      }
+      get_project_people: {
+        Args: { _project_id: string }
+        Returns: {
+          baseline_id: string
+          display_name: string
+          email: string
+          expires_at: string
+          role: string
+          user_id: string
+        }[]
+      }
+      has_project_access: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
@@ -517,10 +794,18 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_project_owner: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      member_role_of: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: string
+      }
       seed_demo_project: { Args: { _user: string }; Returns: string }
     }
     Enums: {
-      member_role: "owner" | "editor" | "viewer"
+      member_role: "owner" | "editor" | "viewer" | "client" | "developer"
       question_status: "open" | "answered" | "skipped"
       req_status:
         | "confirmed"
@@ -655,7 +940,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      member_role: ["owner", "editor", "viewer"],
+      member_role: ["owner", "editor", "viewer", "client", "developer"],
       question_status: ["open", "answered", "skipped"],
       req_status: [
         "confirmed",

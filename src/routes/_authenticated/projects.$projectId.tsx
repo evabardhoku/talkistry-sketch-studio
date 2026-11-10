@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +11,12 @@ import { Chat } from "@/components/workspace/Chat";
 import { RequirementsPanel } from "@/components/workspace/RequirementsPanel";
 import { SketchCanvas } from "@/components/sketch/SketchCanvas";
 import { ScreenInspector } from "@/components/sketch/ScreenInspector";
-import { workspaceQuery } from "@/lib/queries";
+import { accessQuery, workspaceQuery } from "@/lib/queries";
+import { ReviewContext } from "@/components/review/ReviewContext";
+import { ShareDialog } from "@/components/review/ShareDialog";
+import { ScopeChangesPanel } from "@/components/review/ScopeChangesPanel";
+import { can } from "@/lib/baseline";
+import { History } from "lucide-react";
 import { computeReadiness } from "@/lib/spec";
 import { submitDiscoveryTurn } from "@/lib/discovery.functions";
 import { PENDING_IDEA_KEY } from "@/lib/pending";
@@ -22,7 +27,12 @@ export const Route = createFileRoute("/_authenticated/projects/$projectId")({
     { title: "Discovery workspace — SpecLoop" }, { name: "description", content: "Guided discovery conversation with a live product sketch." },
     { property: "og:title", content: "Discovery workspace — SpecLoop" }, { property: "og:description", content: "Conversation and live product sketch." },
   ] }),
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(workspaceQuery(params.projectId)),
+  loader: async ({ context, params }) => {
+    const access = await context.queryClient.fetchQuery(accessQuery(params.projectId));
+    // Members restricted to one approved version never see the live workspace.
+    if (access.member?.baseline_id) throw redirect({ to: "/projects/$projectId/versions", params });
+    return context.queryClient.ensureQueryData(workspaceQuery(params.projectId));
+  },
   pendingComponent: () => <div className="grid min-h-screen place-items-center"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>,
   errorComponent: ({ error }) => <div className="grid min-h-screen place-items-center p-6 text-center"><div><p className="font-display text-2xl">Couldn't open this project</p><p className="mt-1 text-sm text-muted-foreground">{(error as Error).message}</p><Link to="/dashboard" className="mt-4 inline-block text-sm text-primary">Back to projects</Link></div></div>,
   component: Workspace,
@@ -41,6 +51,10 @@ function Workspace() {
   const [highlight, setHighlight] = useState<string | null>(null);
   const [tab, setTab] = useState("chat");
   const [guideHidden, setGuideHidden] = useState(false);
+  const [sideTab, setSideTab] = useState<"reqs" | "scope">("reqs");
+  const baselines = data.versions.filter((v) => v.kind === "baseline");
+  const openScope = data.scopeChanges.filter((c) => c.status === "open").length;
+  const editable = can.edit(data.myRole);
 
   const refresh = useCallback(() => qc.invalidateQueries({ queryKey: ["workspace", projectId] }), [qc, projectId]);
   const openQuestion = data.questions.filter((q) => q.status === "open").at(-1);
@@ -54,6 +68,7 @@ function Workspace() {
     try {
       const r = await submit({ data: { projectId, content, skip } });
       await refresh();
+      if (r.scopeChanges) toast.warning(`${r.scopeChanges} potential scope change${r.scopeChanges > 1 ? "s" : ""} vs the approved baseline`, { action: { label: "Review", onClick: () => { setSideTab("scope"); setPanelOpen(true); setSelected(null); setTab("reqs"); } } });
       if (r.changedScreenKeys.length) toast.success(`Sketch updated · ${r.changedScreenKeys.length} screen${r.changedScreenKeys.length > 1 ? "s" : ""}`);
       return true;
     } catch (e) {
@@ -74,19 +89,36 @@ function Workspace() {
   const showSource = (id: string) => { setHighlight(id); setTab("chat"); setTimeout(() => setHighlight(null), 2500); };
   const select = (id: string) => { setSelected(id); if (isMobile) setTab("inspect"); };
 
-  const chat = <Chat messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
+  const chat = !editable ? <div className="grid h-full place-items-center p-6 text-center text-sm text-muted-foreground">You have read-only access to this project.</div> : <Chat messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
   const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
-  const reqPanel = <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} />;
+  const reqPanel = (
+    <div className="flex h-full flex-col">
+      <div className="flex border-b text-sm">
+        {(["reqs", "scope"] as const).map((t) => (
+          <button key={t} onClick={() => setSideTab(t)} className={`flex-1 px-3 py-2 ${sideTab === t ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>
+            {t === "reqs" ? "Requirements" : `Scope changes${openScope ? ` · ${openScope}` : ""}`}
+          </button>
+        ))}
+      </div>
+      <div className="min-h-0 flex-1">
+        {sideTab === "reqs" ? <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} />
+          : <ScopeChangesPanel changes={data.scopeChanges} baselines={baselines} projectId={projectId} />}
+      </div>
+    </div>
+  );
   const inspector = selectedScreen && <ScreenInspector screen={selectedScreen} screens={data.screens} connections={data.connections} busy={busy}
     onClose={() => setSelected(null)} onSelect={setSelected} onRequestChange={async (t) => { if (isMobile) setTab("chat"); return send(t); }} />;
 
   return (
+    <ReviewContext.Provider value={{ projectId, meId: data.meId, myRole: data.myRole, people: data.people, comments: data.comments, onChanged: refresh }}>
     <div className="flex h-screen flex-col">
       <AppHeader>
         <span className="text-muted-foreground">/</span>
         <h1 className="truncate text-sm font-medium">{data.project.name}</h1>
         <div className="ml-auto hidden items-center gap-3 md:flex">
           <span className="text-xs text-muted-foreground">Readiness <b className="text-foreground">{readiness.score}%</b> · {readiness.confirmed}/{readiness.total} confirmed · {readiness.openQuestions} open question{readiness.openQuestions === 1 ? "" : "s"}</span>
+          <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
+          <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions{baselines[0] ? ` · v${baselines[0].version}` : ""}</Link></Button>
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Specification</Link></Button>
           <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
         </div>
@@ -123,5 +155,6 @@ function Workspace() {
         </div>
       )}
     </div>
+    </ReviewContext.Provider>
   );
 }

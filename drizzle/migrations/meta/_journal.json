@@ -8,6 +8,20 @@
       "when": 1794345811464,
       "tag": "0000_specloop_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794346941970,
+      "tag": "0001_collaboration_review_baselines",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794347001533,
+      "tag": "0002_collaboration_core",
+      "breakpoints": true
     }
   ]
 }
