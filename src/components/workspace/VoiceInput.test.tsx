@@ -34,7 +34,7 @@ describe("explicit recording consent", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
     await waitFor(() => expect(microphone).toHaveBeenCalledTimes(1));
     await screen.findByRole("button", { name: "Stop & transcribe" });
-    fireEvent.click(screen.getByRole("button", { name: "Cancel", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(stopTrack).toHaveBeenCalledTimes(1);
     expect(mocks.transcribe).toHaveBeenCalledTimes(0);
   });
