@@ -9,8 +9,8 @@ import { ROLE_LABEL } from "@/lib/baseline";
 
 export const Route = createFileRoute("/_authenticated/invite/$token")({
   head: () => ({ meta: [
-    { title: "Project invitation — SpecLoop" }, { name: "description", content: "Accept an invitation to collaborate on a SpecLoop project." },
-    { property: "og:title", content: "Project invitation — SpecLoop" }, { property: "og:description", content: "Join a product discovery project." },
+    { title: "Project invitation — Talkistry" }, { name: "description", content: "Accept an invitation to collaborate on a Talkistry project." },
+    { property: "og:title", content: "Project invitation — Talkistry" }, { property: "og:description", content: "Join a product discovery project." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: InvitePage,

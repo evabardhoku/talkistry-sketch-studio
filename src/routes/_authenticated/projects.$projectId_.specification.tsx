@@ -15,8 +15,8 @@ import { PrintSpecification } from "@/components/workspace/PrintSpecification";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId_/specification")({
   head: () => ({ meta: [
-    { title: "Product specification — SpecLoop" }, { name: "description", content: "Structured product specification generated from confirmed discovery decisions." },
-    { property: "og:title", content: "Product specification — SpecLoop" }, { property: "og:description", content: "Structured product brief." },
+    { title: "Product Blueprint — Talkistry" }, { name: "description", content: "Structured product blueprint generated from confirmed discovery decisions." },
+    { property: "og:title", content: "Product Blueprint — Talkistry" }, { property: "og:description", content: "Structured product brief." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(workspaceQuery(params.projectId)),
@@ -53,7 +53,7 @@ function SpecPage() {
         <Button asChild size="sm" className="ml-auto"><Link to="/projects/$projectId/versions" params={{ projectId }}><Save className="size-4" />Versions & approval</Link></Button>
       </AppHeader>
       <div className="mx-auto max-w-4xl px-5 py-10">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Product specification · {rd.label} · {rd.confirmed}/{rd.total} requirements confirmed{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Product Blueprint · {rd.label} · {rd.confirmed}/{rd.total} requirements confirmed{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
         <h1 className="mt-2 break-words font-display text-4xl md:text-5xl">{spec.overview.name}</h1>
         <div className="mt-5"><ExportControls data={data} /></div>
         {data.project.is_demo && <p className="mt-3 text-xs font-medium text-primary">Fictional demo · not real client data or stakeholder approvals.</p>}

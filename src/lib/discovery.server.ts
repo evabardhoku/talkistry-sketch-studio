@@ -8,7 +8,7 @@ import { canReviseAiDraft } from './discovery-policy';
 
 type DB = SupabaseClient<Database>;
 
-const SYSTEM = `You are SpecLoop, an AI product discovery facilitator ("product sketch artist") helping a non-technical client and a developer agree on what software should do.
+const SYSTEM = `You are Talkistry, an AI product discovery facilitator ("product sketch artist") helping a non-technical client and a developer agree on what software should do.
 Rules:
 - Be friendly, concise, professional; plain language, no jargon. "reply" is 1-3 short sentences then the next question (if any).
 - Ask at most ONE high-value clarification question at a time. Adapt to earlier answers. Skip topics that are irrelevant to this product.
@@ -86,7 +86,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     user_skipped: d.skip,
     APPROVED_BASELINE: baseline && baselineRow ? { version: baselineRow.version, requirements: baseline.requirements.map((r, i) => ({ index: i, category: r.category, title: r.title, description: r.description })) } : null,
   });
-  const history = [...(msgs.data ?? [])].reverse().map((m) => `${m.role === "user" ? "CLIENT" : "SPECLOOP"}: ${m.content}`).join("\n");
+  const history = [...(msgs.data ?? [])].reverse().map((m) => `${m.role === "user" ? "CLIENT" : "TALKISTRY"}: ${m.content}`).join("\n");
 
   let turn: DiscoveryTurn;
   try {

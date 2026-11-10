@@ -30,8 +30,8 @@ import { saveQuestion } from "@/lib/meeting-api";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({ meta: [
-    { title: "Discovery workspace — SpecLoop" }, { name: "description", content: "Guided discovery conversation with a live product sketch." },
-    { property: "og:title", content: "Discovery workspace — SpecLoop" }, { property: "og:description", content: "Conversation and live product sketch." },
+    { title: "Discovery workspace — Talkistry" }, { name: "description", content: "Guided discovery conversation with a live product sketch." },
+    { property: "og:title", content: "Discovery workspace — Talkistry" }, { property: "og:description", content: "Conversation and live product sketch." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: async ({ context, params }) => {
@@ -136,12 +136,12 @@ function Workspace() {
           <span className="text-xs text-muted-foreground">Development: {readiness.label} · {readiness.confirmed}/{readiness.total} confirmed</span>
           <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions{baselines[0] ? ` · v${baselines[0].version}` : ""}</Link></Button>
-          <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Specification</Link></Button>
+          <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Product Blueprint</Link></Button>
           <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
         </div>
-        <Button asChild size="sm" variant="ghost" className={`${meeting ? "hidden" : "ml-auto 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open specification"><FileText className="size-4" /></Link></Button>
+        <Button asChild size="sm" variant="ghost" className={`${meeting ? "hidden" : "ml-auto 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open product blueprint"><FileText className="size-4" /></Link></Button>
       </AppHeader>
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2"><Button size="sm" variant="outline" onClick={()=>openSide('meetings')}>Meetings & agenda</Button><Button size="sm" variant="ghost" onClick={()=>openSide('questions')}>Questions · {readiness.decisionBacklog} decisions</Button>{['owner','editor','developer'].includes(data.myRole??'')&&<Button size="sm" variant="ghost" onClick={()=>openSide('development')}>Development Room</Button>}{activeMeeting&&<div className="ml-auto flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}</div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2"><Button size="sm" variant="outline" onClick={()=>openSide('meetings')}>Meetings & agenda</Button><Button size="sm" variant="ghost" onClick={()=>openSide('questions')}>Question Backlog · {readiness.decisionBacklog} decisions</Button>{['owner','editor','developer'].includes(data.myRole??'')&&<Button size="sm" variant="ghost" onClick={()=>openSide('development')}>Development Room</Button>}{activeMeeting&&<div className="ml-auto flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}</div>
       {!meeting && <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-card px-3 py-2 2xl:hidden">
         <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
         <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions</Link></Button>

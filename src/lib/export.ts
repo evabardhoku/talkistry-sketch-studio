@@ -4,7 +4,7 @@ import type { Workspace } from "./queries";
 /** A live saved-data export, explicitly separate from immutable approved baselines. */
 export function buildExport(data: Workspace) {
   return {
-    format: "specloop.specification", schemaVersion: 1,
+    format: "specloop.specification", schemaVersion: 1, brand: "Talkistry",
     state: "live_draft", demo: data.project.is_demo,
     project: { id: data.project.id, name: data.project.name, summary: data.project.summary, updatedAt: data.project.updated_at },
     specification: buildSpec(data.project, data.requirements, data.questions, data.screens, data.connections),
@@ -18,7 +18,7 @@ export function buildExport(data: Workspace) {
 }
 export type ExportDocument = ReturnType<typeof buildExport>;
 export function exportMarkdown(doc: ExportDocument) {
-  const lines: string[] = [`# ${doc.project.name}`, "", doc.demo ? "> FICTIONAL DEMO — not real client information or stakeholder approvals." : "> Live saved specification — not an approved baseline.", "", `Last saved project update: ${doc.project.updatedAt}`, "", "## Project summary", doc.project.summary || "Not recorded."];
+  const lines: string[] = [`# ${doc.project.name}`, "", "Talkistry · Product Blueprint", "", doc.demo ? "> FICTIONAL DEMO — not real client information or stakeholder approvals." : "> Live saved product blueprint — not an approved baseline.", "", `Last saved project update: ${doc.project.updatedAt}`, "", "## Project summary", doc.project.summary || "Not recorded."];
   const section = (name: string, reqs: typeof doc.requirements) => {
     lines.push("", `## ${name}`);
     if (!reqs.length) lines.push("Not recorded.");
