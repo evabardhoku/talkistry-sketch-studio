@@ -41,3 +41,4 @@ use the editor.
 - Discovery request IDs are claimed under a database advisory lock before inference; repeated IDs never rerun AI, including uncertain outcomes.
 - Specification downloads and print views use the same saved workspace data and clearly distinguish the live draft from immutable approval snapshots.
 - Meeting mode reuses the chat and deterministic sketch renderer, keeping recording consent and approval status intact.
+- The root layout owns the single main landmark and skip link; content pages use unframed div wrappers to avoid nested main landmarks.

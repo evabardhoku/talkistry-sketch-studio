@@ -81,6 +81,7 @@ export function VoiceInput({ projectId, disabled, onTranscript, onActive }: { pr
         {state === "recording" ? <><span className="size-2 rounded-full bg-destructive motion-safe:animate-pulse" /><b>Recording · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</b></> : state === "processing" || state === "permission" ? <><Loader2 className="size-4 animate-spin" />{state === "permission" ? "Waiting for microphone permission…" : "Transcribing…"}</> : "Microphone off · up to 3 minutes"}
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {state === "processing" && <p className="text-xs text-muted-foreground">Cancel discards the transcript here; processing already sent to Lovable AI may still finish.</p>}
       <div className="flex flex-wrap gap-2">
         {state === "recording" ? <Button onClick={() => recorder.current?.stop()}><Square className="size-4" />Stop & transcribe</Button> : <Button disabled={!consent || disabled || state === "processing" || state === "permission"} onClick={start}><Mic className="size-4" />Start recording</Button>}
         {state === "error" && audio.current && <Button variant="outline" onClick={() => { const blob = audio.current; if (blob) void process(blob, ++generation.current); }}><RotateCcw className="size-4" />Retry transcription</Button>}

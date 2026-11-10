@@ -96,7 +96,7 @@ function Workspace() {
   const showSource = (id: string) => { setHighlight(id); setTab("chat"); setTimeout(() => setHighlight(null), 2500); };
   const select = (id: string) => { setSelected(id); if (isMobile) setTab("inspect"); };
 
-  const chat = <Chat projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
+  const chat = <Chat key={projectId} projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
   const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
   const reqPanel = (
     <div className="flex h-full flex-col">
