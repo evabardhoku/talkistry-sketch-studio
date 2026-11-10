@@ -34,7 +34,7 @@ function extractText(res: unknown): string {
   throw new Error("AI returned no text");
 }
 
-export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: string; content: string; skip: boolean; requestId: string; questionId?: string; focusScreenId?: string }) {
+export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: string; content: string; skip: boolean; requestId: string; questionId?: string | undefined; focusScreenId?: string | undefined }) {
   const { projectId } = d;
   const { data: project, error: pe } = await sb.from("projects").select("*").eq("id", projectId).single();
   if (pe || !project) throw new Error("Project not found");

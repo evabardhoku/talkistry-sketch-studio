@@ -9,7 +9,7 @@ import { saveQuestion } from '@/lib/meeting-api';
 import { unresolvedQuestion } from '@/lib/meeting';
 import { can } from '@/lib/baseline';
 
-export function QuestionBacklog({data,onChanged,onAnswer,stageKey}:{data:Workspace;onChanged:()=>Promise<unknown>;onAnswer:(text:string,id:string)=>Promise<boolean>;stageKey?:string}) {
+export function QuestionBacklog({data,onChanged,onAnswer,stageKey}:{data:Workspace;onChanged:()=>Promise<unknown>;onAnswer:(text:string,id:string)=>Promise<boolean>;stageKey?:string | undefined}) {
  const [status,setStatus]=useState('all'),[topic,setTopic]=useState('all'),[meeting,setMeeting]=useState('all'),[selected,setSelected]=useState<Set<string>>(new Set()),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState(false);
  const editable=can.edit(data.myRole);
  const mutate=async(fn:()=>Promise<unknown>)=>{setBusy(true);try{await fn();await onChanged();}catch(e){toast.error(e instanceof Error?e.message:'Could not save question');}finally{setBusy(false);}};

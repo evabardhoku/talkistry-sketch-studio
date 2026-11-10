@@ -17,7 +17,7 @@ import { ShareDialog } from "@/components/review/ShareDialog";
 import { ScopeChangesPanel } from "@/components/review/ScopeChangesPanel";
 import { can } from "@/lib/baseline";
 import { History } from "lucide-react";
-import { computeReadiness } from "@/lib/spec";
+import { computeReadiness, sketchReadiness } from "@/lib/spec";
 import { submitDiscoveryTurn } from "@/lib/discovery.functions";
 import { PENDING_IDEA_KEY } from "@/lib/pending";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -111,11 +111,6 @@ function Workspace() {
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 border-b text-sm">
         <select aria-label="Workspace panel" value={sideTab} onChange={e=>{setSideTab(e.target.value as typeof sideTab);setQuestionStage(undefined);}} className="h-11 min-w-0 flex-1 bg-card px-3 text-sm"><option value="reqs">Requirements</option><option value="scope">Scope changes{openScope ? ` · ${openScope}` : ''}</option><option value="meetings">Meeting agenda</option><option value="questions">Question backlog</option>{['owner','editor','developer'].includes(data.myRole??'')&&<option value="development">Development Room · internal</option>}</select>
-        {([] as const).map((t) => (
-          <Button variant="ghost" key={t} onClick={() => setSideTab(t)} aria-pressed={sideTab === t} className={`h-11 flex-1 rounded-none px-3 py-2 ${sideTab === t ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>
-            {t}
-          </Button>
-        ))}
       </div>
       <div className="min-h-0 flex-1">
         {sideTab === "reqs" ? <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} />
@@ -175,7 +170,7 @@ function Workspace() {
         <div className="flex min-h-0 flex-1">
           <section className="flex w-[340px] shrink-0 flex-col border-r bg-background 2xl:w-[440px]">{chat}</section>
           <section className="relative min-w-0 flex-1">
-            <div className="absolute left-4 top-3 z-10 rounded-full border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-soft backdrop-blur">Live product sketch · {data.screens.length} screens · click a screen to inspect</div>
+            <div className="absolute left-4 top-3 z-10 max-w-[calc(100%-2rem)] rounded-md border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-soft backdrop-blur">Sketch: {sketchReadiness(data.screens,data.connections)} · {data.screens.length} proposed screens</div>
             {canvas}
           </section>
           {inspector ? <div className="w-[300px] shrink-0 border-l xl:w-[340px]">{inspector}</div>
