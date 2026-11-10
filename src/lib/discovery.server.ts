@@ -52,8 +52,8 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   const state = (userMsg.data.meta as { turn_state?: string } | null)?.turn_state;
   if (state === "complete") return { scopeChanges: 0, changeSummary: "Already saved", changedScreenKeys: [] as string[], newRequirements: 0 };
   // Only the claimant runs inference. Duplicates read state, never replay an uncertain call.
-  if (userMsg.data.created_at !== (claim.data as { created_at?: string } | null)?.created_at) throw new Error("This answer is already being processed.");
   if (state === "failed") throw new Error("This attempt did not finish. Review your saved answer before sending a new attempt.");
+  if (!(claim.data as { claimed?: boolean } | null)?.claimed) throw new Error("This answer is already being processed. Refresh to check its status; it won't be sent to AI twice.");
 
   const [msgs, reqs, qs, screens] = await Promise.all([
     sb.from("conversation_messages").select("role,content").eq("session_id", session.id).order("created_at", { ascending: false }).limit(24),
