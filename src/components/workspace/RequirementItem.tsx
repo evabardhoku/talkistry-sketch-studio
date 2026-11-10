@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { Check, Clock, MessageSquareQuote, Pencil, Ban, Trash2, Undo2 } from "lucide-react";
+import { Check, Clock, HelpCircle, MessageSquare, MessageSquareQuote, Pencil, Ban, Trash2, Undo2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { useReview, personName } from "@/components/review/ReviewContext";
+import { CommentThread, openCount } from "@/components/review/CommentThread";
+import { can } from "@/lib/baseline";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +20,13 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
   const [title, setTitle] = useState(req.title);
   const [desc, setDesc] = useState(req.description);
   const [saving, setSaving] = useState(false);
+  const [thread, setThread] = useState<null | "comment" | "clarification">(null);
+  const ctx = useReview();
+  const role = ctx?.myRole ?? null;
+  const editable = ctx ? can.edit(role) : true;
+  const mayConfirm = ctx ? can.confirm(role) : true;
+  const comments = ctx?.comments.filter((c) => c.requirement_id === req.id) ?? [];
+  const open = openCount(comments);
 
   async function run(fn: () => Promise<void>) {
     setSaving(true);
