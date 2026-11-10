@@ -122,6 +122,7 @@ function Workspace() {
       <AppHeader>
         <span className="text-muted-foreground">/</span>
         <h1 className="truncate text-sm font-medium">{data.project.name}</h1>
+        {meeting && data.project.is_demo && <span className="shrink-0 text-xs text-primary">Demo</span>}
         <Button size="icon" variant="ghost" className="min-h-11 min-w-11 shrink-0" aria-label={meeting ? "Exit presentation mode" : "Enter presentation mode"} title={meeting ? "Exit presentation mode" : "Enter presentation mode"} aria-pressed={meeting} onClick={() => { setMeeting((v) => !v); setSelected(null); }}><Presentation className="size-4" /></Button>
         <div className={`${meeting ? "hidden" : "ml-auto hidden items-center gap-2 2xl:flex"}`}>
           <span className="text-xs text-muted-foreground">Readiness <b className="text-foreground">{readiness.score}%</b> · {readiness.confirmed}/{readiness.total} confirmed · {readiness.openQuestions} open question{readiness.openQuestions === 1 ? "" : "s"}</span>

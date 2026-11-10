@@ -55,12 +55,14 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   if (state === "failed") throw new Error("This attempt did not finish. Review your saved answer before sending a new attempt.");
   if (!(claim.data as { claimed?: boolean } | null)?.claimed) throw new Error("This answer is already being processed. Refresh to check its status; it won't be sent to AI twice.");
 
+  try {
   const [msgs, reqs, qs, screens] = await Promise.all([
     sb.from("conversation_messages").select("role,content").eq("session_id", session.id).order("created_at", { ascending: false }).limit(24),
     sb.from("requirements").select("category,title,description,status,evidence").eq("project_id", projectId),
     sb.from("clarification_questions").select("id,question,status,topic").eq("project_id", projectId).order("created_at"),
     sb.from("product_screens").select("id,key,name,purpose,user_role,components,unresolved").eq("project_id", projectId).order("position"),
   ]);
+  if ([msgs, reqs, qs, screens].some((r) => r.error)) throw new Error("Could not read the saved project context. Refresh before trying again.");
   const { data: baselineRow } = await sb.from("specification_versions").select("id,version,content").eq("project_id", projectId).eq("kind", "baseline").order("version", { ascending: false }).limit(1).maybeSingle();
   const baseline = baselineRow ? parseBaseline(baselineRow.content) : null;
   const openQ = (qs.data ?? []).filter((q) => q.status === "open").at(-1);
@@ -104,16 +106,18 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   if (aMsg.error) throw new Error(aMsg.error.message);
 
   if (openQ) {
-    await sb.from("clarification_questions").update({
+    const saved = await sb.from("clarification_questions").update({
       status: d.skip ? "skipped" : turn.current_question_answered ? "answered" : "open",
       answer_message_id: d.skip ? null : userMsg.data.id, updated_at: new Date().toISOString(),
     }).eq("id", openQ.id);
+    if (saved.error) throw new Error("The answer was saved but the question status could not be updated. Refresh to review.");
   }
   if (turn.next_question && (d.skip || turn.current_question_answered || !openQ)) {
-    await sb.from("clarification_questions").insert({
+    const saved = await sb.from("clarification_questions").insert({
       project_id: projectId, session_id: session.id, question: turn.next_question.question,
       topic: turn.next_question.topic || "general", rationale: turn.next_question.rationale, asked_message_id: aMsg.data.id,
     });
+    if (saved.error) throw new Error("The next question could not be saved. Refresh before continuing.");
   }
 
   const existingTitles = new Set((reqs.data ?? []).map((r) => r.title.toLowerCase()));
@@ -171,6 +175,11 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   }
 
   await sb.from("projects").update({ updated_at: new Date().toISOString() }).eq("id", projectId);
-  await sb.from("conversation_messages").update({ meta: { skip: d.skip, turn_state: "complete" } }).eq("id", userMsg.data.id);
+  const finished = await sb.from("conversation_messages").update({ meta: { skip: d.skip, turn_state: "complete" } }).eq("id", userMsg.data.id);
+  if (finished.error) throw new Error("Your changes were saved, but completion could not be recorded. Refresh before continuing.");
   return { scopeChanges: baseline ? turn.scope_changes.length : 0, changeSummary: turn.change_summary, changedScreenKeys: turn.screens.map((s) => s.key), newRequirements: newReqs.length };
+  } catch (e) {
+    await sb.from("conversation_messages").update({ meta: { skip: d.skip, turn_state: "failed" } }).eq("id", userMsg.data.id);
+    throw e;
+  }
 }
