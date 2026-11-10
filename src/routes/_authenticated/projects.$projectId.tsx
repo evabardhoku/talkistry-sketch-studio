@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, PanelRightClose, PanelRightOpen, X } from "lucide-react";
+import { FileText, Loader2, PanelRightClose, PanelRightOpen, X, Presentation } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,13 @@ import { computeReadiness } from "@/lib/spec";
 import { submitDiscoveryTurn } from "@/lib/discovery.functions";
 import { PENDING_IDEA_KEY } from "@/lib/pending";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MeetingSketch } from "@/components/workspace/MeetingSketch";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({ meta: [
     { title: "Discovery workspace — SpecLoop" }, { name: "description", content: "Guided discovery conversation with a live product sketch." },
     { property: "og:title", content: "Discovery workspace — SpecLoop" }, { property: "og:description", content: "Conversation and live product sketch." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: async ({ context, params }) => {
     const access = await context.queryClient.fetchQuery(accessQuery(params.projectId));
@@ -45,6 +47,9 @@ function Workspace() {
   const submit = useServerFn(submitDiscoveryTurn);
   const isMobile = useIsMobile();
   const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
+  const [meeting, setMeeting] = useState(false);
+  useEffect(() => { const exit = (e: KeyboardEvent) => { if (e.key === "Escape") setMeeting(false); }; window.addEventListener("keydown", exit); return () => window.removeEventListener("keydown", exit); }, []);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -64,9 +69,11 @@ function Workspace() {
   const selectedScreen = data.screens.find((s) => s.id === selected) ?? null;
 
   const send = useCallback(async (content: string, skip = false) => {
+    if (sending.current) return false;
+    sending.current = true;
     setBusy(true); setError(null);
     try {
-      const r = await submit({ data: { projectId, content, skip } });
+      const r = await submit({ data: { projectId, content, skip, requestId: crypto.randomUUID() } });
       await refresh();
       if (r.scopeChanges) toast.warning(`${r.scopeChanges} potential scope change${r.scopeChanges > 1 ? "s" : ""} vs the approved baseline`, { action: { label: "Review", onClick: () => { setSideTab("scope"); setPanelOpen(true); setSelected(null); setTab("reqs"); } } });
       if (r.changedScreenKeys.length) toast.success(`Sketch updated · ${r.changedScreenKeys.length} screen${r.changedScreenKeys.length > 1 ? "s" : ""}`);
@@ -75,7 +82,7 @@ function Workspace() {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       await refresh();
       return false;
-    } finally { setBusy(false); }
+    } finally { setBusy(false); sending.current = false; }
   }, [submit, projectId, refresh]);
 
   // A project created with an idea sends it as the first message once.
@@ -83,21 +90,21 @@ function Workspace() {
   useEffect(() => {
     const key = PENDING_IDEA_KEY(projectId);
     const idea = sessionStorage.getItem(key);
-    if (idea && !started.current && data.messages.length === 0) { started.current = true; sessionStorage.removeItem(key); void send(idea); }
+    if (idea && !started.current && data.messages.length === 0) { started.current = true; void send(idea).then((ok) => { if (ok) sessionStorage.removeItem(key); else sessionStorage.setItem(`specloop:draft:${projectId}`, idea); }); }
   }, [projectId, data.messages.length, send]);
 
   const showSource = (id: string) => { setHighlight(id); setTab("chat"); setTimeout(() => setHighlight(null), 2500); };
   const select = (id: string) => { setSelected(id); if (isMobile) setTab("inspect"); };
 
-  const chat = !editable ? <div className="grid h-full place-items-center p-6 text-center text-sm text-muted-foreground">You have read-only access to this project.</div> : <Chat messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
+  const chat = <Chat projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t)} onSkip={() => void send("", true)} highlightId={highlight} />;
   const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
   const reqPanel = (
     <div className="flex h-full flex-col">
       <div className="flex border-b text-sm">
         {(["reqs", "scope"] as const).map((t) => (
-          <button key={t} onClick={() => setSideTab(t)} className={`flex-1 px-3 py-2 ${sideTab === t ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>
+          <Button variant="ghost" key={t} onClick={() => setSideTab(t)} aria-pressed={sideTab === t} className={`h-11 flex-1 rounded-none px-3 py-2 ${sideTab === t ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>
             {t === "reqs" ? "Requirements" : `Scope changes${openScope ? ` · ${openScope}` : ""}`}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="min-h-0 flex-1">
@@ -111,28 +118,29 @@ function Workspace() {
 
   return (
     <ReviewContext.Provider value={{ projectId, meId: data.meId, myRole: data.myRole, people: data.people, comments: data.comments, onChanged: refresh }}>
-    <div className="flex h-screen flex-col">
+    <div className="flex h-dvh flex-col">
       <AppHeader>
         <span className="text-muted-foreground">/</span>
         <h1 className="truncate text-sm font-medium">{data.project.name}</h1>
-        <div className="ml-auto hidden items-center gap-3 md:flex">
+        <Button size="icon" variant="ghost" className="min-h-11 min-w-11 shrink-0" aria-label={meeting ? "Exit presentation mode" : "Enter presentation mode"} title={meeting ? "Exit presentation mode" : "Enter presentation mode"} aria-pressed={meeting} onClick={() => { setMeeting((v) => !v); setSelected(null); }}><Presentation className="size-4" /></Button>
+        <div className={`${meeting ? "hidden" : "ml-auto hidden items-center gap-2 2xl:flex"}`}>
           <span className="text-xs text-muted-foreground">Readiness <b className="text-foreground">{readiness.score}%</b> · {readiness.confirmed}/{readiness.total} confirmed · {readiness.openQuestions} open question{readiness.openQuestions === 1 ? "" : "s"}</span>
           <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions{baselines[0] ? ` · v${baselines[0].version}` : ""}</Link></Button>
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Specification</Link></Button>
           <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
         </div>
-        <Button asChild size="sm" variant="ghost" className="ml-auto md:hidden"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" /></Link></Button>
+        <Button asChild size="sm" variant="ghost" className={`${meeting ? "hidden" : "ml-auto 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open specification"><FileText className="size-4" /></Link></Button>
       </AppHeader>
 
-      {data.project.is_demo && !guideHidden && (
+      {data.project.is_demo && !guideHidden && !meeting && (
         <div className="flex items-start gap-3 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">
-          <p className="flex-1"><b>Guided demo:</b> 1) Answer the open question on the left. 2) Watch the sketch update on the right. 3) Confirm or edit proposed requirements in the panel. 4) Click a screen to request changes. 5) Open the Specification.</p>
-          <button onClick={() => setGuideHidden(true)} aria-label="Hide guide"><X className="size-3.5" /></button>
+          <p className="flex-1"><b>Fictional demo:</b> Private tutoring booking platform · sample conversations and stakeholder notes are not real client data.</p>
+          <Button variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={() => setGuideHidden(true)} aria-label="Hide guide"><X className="size-3.5" /></Button>
         </div>
       )}
 
-      {isMobile ? (
+      {meeting ? <div className="grid min-h-0 flex-1 grid-rows-2 md:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)] md:grid-rows-1"><section className="min-h-0 border-b md:border-b-0 md:border-r">{chat}</section><MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /></div> : isMobile ? (
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
           <TabsList className="mx-3 mt-2 grid grid-cols-4">
             <TabsTrigger value="chat">Chat</TabsTrigger><TabsTrigger value="sketch">Sketch</TabsTrigger>
@@ -145,13 +153,13 @@ function Workspace() {
         </Tabs>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <section className="flex w-[400px] shrink-0 flex-col border-r bg-background xl:w-[440px]">{chat}</section>
+          <section className="flex w-[340px] shrink-0 flex-col border-r bg-background 2xl:w-[440px]">{chat}</section>
           <section className="relative min-w-0 flex-1">
             <div className="absolute left-4 top-3 z-10 rounded-full border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-soft backdrop-blur">Live product sketch · {data.screens.length} screens · click a screen to inspect</div>
             {canvas}
           </section>
-          {inspector ? <div className="w-[340px] shrink-0 border-l">{inspector}</div>
-            : panelOpen && <aside className="w-[340px] shrink-0 border-l bg-card">{reqPanel}</aside>}
+          {inspector ? <div className="w-[300px] shrink-0 border-l xl:w-[340px]">{inspector}</div>
+            : panelOpen && <aside className="w-[280px] shrink-0 border-l bg-card xl:w-[340px]">{reqPanel}</aside>}
         </div>
       )}
     </div>

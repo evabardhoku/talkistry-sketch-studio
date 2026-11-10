@@ -39,6 +39,7 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
       <div className="space-y-2 rounded-lg border bg-card p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Requirement title" />
         <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} aria-label="Requirement description" />
+        {(title !== req.title || desc !== req.description) && <p role="status" className="text-xs text-unresolved">Unsaved requirement changes</p>}
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
           <Button size="sm" disabled={saving || !title.trim()} onClick={() => run(async () => {
@@ -92,7 +93,7 @@ export function RequirementItem({ req, onChanged, onShowSource, compact }: {
         </>}
         {ctx && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setThread(thread ? null : "comment")}><MessageSquare className="size-3" />{comments.length ? `${comments.length}${open ? ` · ${open} open` : ""}` : "Comment"}</Button>}
         {ctx && editable && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setThread("clarification")}><HelpCircle className="size-3" />Ask</Button>}
-        <Button size="sm" variant="ghost" className={`ml-auto h-7 px-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 ${!ctx || role === "owner" || role === "editor" ? "" : "hidden"}`} disabled={saving} onClick={() => run(() => deleteRequirement(req.id))} aria-label="Delete requirement"><Trash2 className="size-3" /></Button>
+        <Button size="sm" variant="ghost" className={`ml-auto h-7 px-2 text-xs text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 ${!ctx || role === "owner" || role === "editor" ? "" : "hidden"}`} disabled={saving} onClick={() => run(() => deleteRequirement(req.id))} aria-label="Delete requirement"><Trash2 className="size-3" /></Button>
       </div>
       {thread && <div className="mt-2 border-t pt-2"><CommentThread key={thread} target={{ requirement_id: req.id }} defaultKind={thread} /></div>}
     </div>

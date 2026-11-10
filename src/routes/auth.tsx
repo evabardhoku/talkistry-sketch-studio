@@ -12,6 +12,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
     { title: "Sign in — SpecLoop" }, { name: "description", content: "Sign in to SpecLoop to run product discovery sessions." },
     { property: "og:title", content: "Sign in — SpecLoop" }, { property: "og:description", content: "Sign in to your SpecLoop workspace." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: AuthPage,
 });

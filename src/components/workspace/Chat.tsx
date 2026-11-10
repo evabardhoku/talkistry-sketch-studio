@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import type { Message, Question } from "@/lib/types";
 import { VoiceInput } from "./VoiceInput";
 
-export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, highlightId, projectId, meeting = false }: {
+export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, highlightId, projectId, meeting = false, readOnly = false }: {
   messages: Message[]; openQuestion: Question | undefined; busy: boolean; error: string | null;
   onSubmit: (text: string) => Promise<boolean>; onSkip: () => void; highlightId: string | null;
-  projectId: string; meeting?: boolean;
+  projectId: string; meeting?: boolean; readOnly?: boolean;
 }) {
   const [text, setText] = useState("");
   const [voiceActive, setVoiceActive] = useState(false);
@@ -61,7 +61,7 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, hi
         )}
         <div ref={end} />
       </div>
-      <div className="border-t bg-card p-4">
+      {readOnly ? <p className="border-t p-4 text-sm text-muted-foreground">Read-only project access</p> : <div className="shrink-0 border-t bg-card p-4">
         {openQuestion && !busy && (
           <div className="mb-3 flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-sm">
             <HelpCircle className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -85,7 +85,7 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, hi
           </Button>
         </div>
         <div className="mt-2 flex items-center gap-2"><VoiceInput projectId={projectId} disabled={busy} onActive={setVoiceActive} onTranscript={(t) => { setText((v) => v ? `${v}\n${t}` : t); setTranscript(true); }} /><p className="text-xs text-muted-foreground" role="status">{text.trim() ? `Unsent draft · ${text.length}/4000` : "No unsent changes"}</p></div>
-      </div>
+      </div>}
     </div>
   );
 }

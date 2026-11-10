@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/projects/$projectId_/versi
   head: () => ({ meta: [
     { title: "Approved versions — SpecLoop" }, { name: "description", content: "Approved specification baselines and the differences between them." },
     { property: "og:title", content: "Approved versions — SpecLoop" }, { property: "og:description", content: "Specification baselines and version history." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: async ({ context, params }) => {
     await Promise.all([context.queryClient.ensureQueryData(accessQuery(params.projectId)), context.queryClient.ensureQueryData(baselinesQuery(params.projectId))]);
