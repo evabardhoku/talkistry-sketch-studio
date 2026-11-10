@@ -3,22 +3,26 @@ import { generateResponse, GatewayError } from "@lovable.dev/ai-gateway";
 import type { Database } from "@/integrations/supabase/types";
 import { parseBaseline } from "./baseline";
 import { discoveryTurnJsonSchema, discoveryTurnSchema, type DiscoveryTurn } from "./ai-schema";
+import { elapsed, stageElapsed, parseAgenda, similarQuestion } from "./meeting";
+import { canReviseAiDraft } from './discovery-policy';
 
 type DB = SupabaseClient<Database>;
 
 const SYSTEM = `You are SpecLoop, an AI product discovery facilitator ("product sketch artist") helping a non-technical client and a developer agree on what software should do.
 Rules:
 - Be friendly, concise, professional; plain language, no jargon. "reply" is 1-3 short sentences then the next question (if any).
-- Ask exactly ONE high-value clarification question at a time. Adapt to earlier answers. Skip topics that are irrelevant to this product.
+- Ask at most ONE high-value clarification question at a time. Adapt to earlier answers. Skip topics that are irrelevant to this product.
 - Explore when relevant: target users & roles, permissions, core workflows, business rules, exceptions/edge cases, payments, notifications, data to store.
 - NEVER invent business requirements. Only suggest requirements directly supported by what the human said; put the exact supporting words in evidence_quote. If something is implied but not stated, put it in "ambiguities" or as status "unresolved" — not "proposed".
-- Do not repeat requirements that already exist in the current list (by meaning).
+- Reuse existing requirement titles for an affected unreviewed AI draft that needs revision. Never rewrite confirmed or human-edited requirements; propose a separately reviewable change instead. Do not repeat unaffected requirements.
 - Screens: a low-fidelity sketch. Return ONLY screens that are new or should change this turn (full definition for each). Reuse existing keys to update. Use component types: header, nav, card, form, input, button, list, search, calendar, table, modal, text. Mark functionality whose behaviour is undecided in "unresolved". change_note explains why the screen changed (or "").
 - connections: navigation between screens by key (existing or new); return only new links.
 - If the user skipped the question, don't push; move to another valuable topic.
 - If the user requests a change to a screen, update that screen accordingly.
-- next_question null only if discovery feels complete.
-- If current_open_question remains unanswered and wasn't skipped, next_question must repeat it. Do not switch to a different question until the current one is answered or explicitly skipped.
+- Facilitate the active meeting goal, not an endless interview. Ask at most ONE immediate question. next_question may be null when it is better to review the sketch or decisions. Never repeat a saved answered/resolved question. Prefer an existing critical question over a near-duplicate.
+- backlog_questions captures missing information separately: critical blocks a central workflow/business decision; important affects implementation or experience; secondary is refinements. Use exact agenda stage keys for future-stage questions (or empty string). Link existing screen keys and requirement titles where applicable. Suggested answers are options, never facts.
+- Secondary and future-stage questions belong in the backlog, not the immediate conversation. With under 2 minutes remaining, prioritize sketch-impacting decisions and feasibility blockers. Unanswered questions may be deferred; never force completion or override the facilitator.
+- Keep the sketch moving from the latest explicit information: bookstore catalog, physical checkout, ebook library, audiobook player and shipping controls can be proposed before secondary delivery-country details are resolved. Preserve existing screens and confirmed requirements; return only affected screens. Undecided elements remain explicitly unresolved. Do not redraw unchanged screens.
 - scope_changes: ONLY when APPROVED_BASELINE is present. Compare the client's latest message against the approved baseline requirements. Flag new functionality not in the baseline, changed behavior of a baseline item, a conflict with a baseline item, or a removed assumption. baseline_ref = index of the affected baseline requirement, or -1 for brand-new functionality. after_quote = exact words from the client's latest message. explanation = plain-language reason it may affect scope. Never estimate cost or time. Empty array if nothing differs.`;
 
 function extractText(res: unknown): string {
@@ -31,7 +35,7 @@ function extractText(res: unknown): string {
   throw new Error("AI returned no text");
 }
 
-export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: string; content: string; skip: boolean; requestId: string }) {
+export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: string; content: string; skip: boolean; requestId: string; questionId?: string | undefined; focusScreenId?: string | undefined }) {
   const { projectId } = d;
   const { data: project, error: pe } = await sb.from("projects").select("*").eq("id", projectId).single();
   if (pe || !project) throw new Error("Project not found");
@@ -59,18 +63,24 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
   try {
   const [msgs, reqs, qs, screens] = await Promise.all([
     sb.from("conversation_messages").select("role,content").eq("session_id", session.id).order("created_at", { ascending: false }).limit(24),
-    sb.from("requirements").select("category,title,description,status,evidence").eq("project_id", projectId),
-    sb.from("clarification_questions").select("id,question,status,topic").eq("project_id", projectId).order("created_at"),
+    sb.from("requirements").select("id,category,title,description,status,evidence,origin,last_decision_id").eq("project_id", projectId),
+    sb.from("clarification_questions").select("*").eq("project_id", projectId).order("created_at"),
     sb.from("product_screens").select("id,key,name,purpose,user_role,components,unresolved").eq("project_id", projectId).order("position"),
   ]);
   if ([msgs, reqs, qs, screens].some((r) => r.error)) throw new Error("Could not read the saved project context. Refresh before trying again.");
   const { data: baselineRow } = await sb.from("specification_versions").select("id,version,content").eq("project_id", projectId).eq("kind", "baseline").order("version", { ascending: false }).limit(1).maybeSingle();
   const baseline = baselineRow ? parseBaseline(baselineRow.content) : null;
-  const openQ = (qs.data ?? []).filter((q) => q.status === "open").at(-1);
+  const { data: activeMeeting } = await sb.from("meetings").select("*").eq("project_id",projectId).in("status",["running","paused"]).maybeSingle();
+  const agenda = activeMeeting ? parseAgenda(activeMeeting.agenda) : [];
+  const stage = activeMeeting ? agenda[activeMeeting.active_stage] : undefined;
+  const openQ = d.questionId ? (qs.data ?? []).find(q=>q.id===d.questionId) : (qs.data ?? []).find(q=>q.is_current && q.status==='open') ?? (qs.data ?? []).filter(q=>q.status==='open' && (!activeMeeting || q.priority==='critical')).at(-1);
+  if(d.questionId && !openQ) throw new Error('Question not found in this project');
   const contextBlock = JSON.stringify({
     product: { name: project.name, summary: project.summary },
     requirements: reqs.data ?? [],
-    asked_questions: (qs.data ?? []).map((q) => ({ q: q.question, status: q.status, topic: q.topic })),
+    asked_questions: (qs.data ?? []).map((q) => ({ id:q.id, q: q.question, status: q.status, topic: q.topic, priority:q.priority, answer:q.answer, stage_key:q.stage_key })),
+    MEETING: activeMeeting ? {title:activeMeeting.title,purpose:activeMeeting.purpose,goals:activeMeeting.goals,stage,agenda,remaining_seconds:activeMeeting.duration_minutes*60-elapsed(activeMeeting),stage_remaining_seconds:(stage?.minutes ?? 0)*60-stageElapsed(activeMeeting)} : null,
+    focus_screen: d.focusScreenId ? (screens.data ?? []).find(s=>s.id===d.focusScreenId) : null,
     current_open_question: openQ?.question ?? null,
     screens: (screens.data ?? []).map(({ id: _id, ...s }) => s),
     user_skipped: d.skip,
@@ -99,6 +109,10 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     throw new Error(e instanceof Error && e.message.includes("validation") ? "The AI returned an unexpected answer. Please try again." : "The AI could not process this answer. Please try again.");
   }
 
+  if(turn.next_question && activeMeeting && turn.next_question.priority==='secondary') {
+    turn.backlog_questions.push({...turn.next_question,stage_key:stage?.key ?? '',screen_key:'',requirement_title:'',suggested_answers:[]});
+    turn.next_question=null;
+  }
   const reply = turn.next_question && !turn.reply.includes(turn.next_question.question) ? `${turn.reply}\n\n${turn.next_question.question}` : turn.reply;
   const aMsg = await sb.from("conversation_messages").insert({
     project_id: projectId, session_id: session.id, role: "assistant", content: reply,
@@ -108,30 +122,49 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
 
   if (openQ) {
     const saved = await sb.from("clarification_questions").update({
-      status: d.skip ? "skipped" : turn.current_question_answered ? "answered" : "open",
-      answer_message_id: d.skip ? null : userMsg.data.id, updated_at: new Date().toISOString(),
+      status: d.skip ? "deferred" : turn.current_question_answered ? "answered" : openQ.status,
+      is_current: false,
+      ...(turn.current_question_answered && !d.skip ? {answer_message_id:userMsg.data.id,answer:d.content} : {}),
+      updated_at: new Date().toISOString(),
     }).eq("id", openQ.id);
     if (saved.error) throw new Error("The answer was saved but the question status could not be updated. Refresh to review.");
   }
-  if (turn.next_question && (d.skip || turn.current_question_answered || !openQ)) {
-    const saved = await sb.from("clarification_questions").insert({
-      project_id: projectId, session_id: session.id, question: turn.next_question.question,
-      topic: turn.next_question.topic || "general", rationale: turn.next_question.rationale, asked_message_id: aMsg.data.id,
-    });
-    if (saved.error) throw new Error("The next question could not be saved. Refresh before continuing.");
+  const cleared=await sb.from('clarification_questions').update({is_current:false}).eq('project_id',projectId).eq('is_current',true);
+  if(cleared.error) throw new Error('Could not update the active question');
+  const savedQuestions=[...(qs.data ?? [])];
+  for(const q of [...turn.backlog_questions.map(q=>({...q,current:false})),...(turn.next_question ? [{...turn.next_question,stage_key:stage?.key ?? '',screen_key:'',requirement_title:'',suggested_answers:[],current:true}] : [])]) {
+    const duplicate=savedQuestions.find(x=>similarQuestion(x.question,q.question));
+    if(duplicate){
+      if(q.current && !['answered','resolved'].includes(duplicate.status) && !(duplicate.id===openQ?.id && (d.skip || turn.current_question_answered))){
+        const r=await sb.from('clarification_questions').update({is_current:true,status:'open',meeting_id:activeMeeting?.id ?? duplicate.meeting_id,stage_key:stage?.key ?? duplicate.stage_key}).eq('id',duplicate.id); if(r.error) throw new Error(r.error.message);
+      }
+      continue;
+    }
+    const r=await sb.from('clarification_questions').insert({project_id:projectId,session_id:session.id,question:q.question,topic:q.topic || 'general',rationale:q.rationale,priority:q.priority,status:q.current?'open':'deferred',is_current:q.current,asked_message_id:aMsg.data.id,meeting_id:activeMeeting?.id ?? null,stage_key:q.stage_key || stage?.key || null,screen_id:(screens.data ?? []).find(s=>s.key===q.screen_key)?.id ?? null,requirement_id:(reqs.data ?? []).find(r=>r.title===q.requirement_title)?.id ?? null,suggested_answers:q.suggested_answers}).select().single();
+    if(r.error) throw new Error('Could not save the question backlog'); if(r.data) savedQuestions.push(r.data);
   }
 
   const existingTitles = new Set((reqs.data ?? []).map((r) => r.title.toLowerCase()));
-  const newReqs = [
-    ...turn.requirement_suggestions.filter((r) => !existingTitles.has(r.title.toLowerCase())).map((r) => ({
-      project_id: projectId, category: r.category, title: r.title, description: r.description, status: r.status,
-      evidence: r.evidence_quote || null, source_message_id: userMsg.data.id, origin: "ai",
-    })),
-    ...turn.ambiguities.filter((a) => !existingTitles.has(a.toLowerCase())).map((a) => ({
-      project_id: projectId, category: "constraint", title: a.slice(0, 140), description: "Detected ambiguity — needs a decision.",
-      status: "unresolved" as const, evidence: null, source_message_id: userMsg.data.id, origin: "ai",
-    })),
-  ];
+  const newReqs: Database['public']['Tables']['requirements']['Insert'][] = [];
+  for(const suggestion of turn.requirement_suggestions){
+    const existing=(reqs.data ?? []).find(r=>r.title.toLowerCase()===suggestion.title.toLowerCase());
+    if(existing){
+      // AI can revise only its own unreviewed draft; human edits and approvals are never overwritten.
+      if(canReviseAiDraft(existing)){
+        const saved=await sb.from('requirements').update({description:suggestion.description,status:suggestion.status,evidence:suggestion.evidence_quote||null,source_message_id:userMsg.data.id,updated_at:new Date().toISOString()}).eq('id',existing.id);
+        if(saved.error)throw new Error('Could not save the updated requirement suggestion.');
+      }
+      continue;
+    }
+    if(existingTitles.has(suggestion.title.toLowerCase()))continue;
+    existingTitles.add(suggestion.title.toLowerCase());
+    newReqs.push({project_id:projectId,category:suggestion.category,title:suggestion.title,description:suggestion.description,status:suggestion.status,evidence:suggestion.evidence_quote||null,source_message_id:userMsg.data.id,origin:'ai'});
+  }
+  for(const ambiguity of turn.ambiguities){
+    if(existingTitles.has(ambiguity.toLowerCase()))continue;
+    existingTitles.add(ambiguity.toLowerCase());
+    newReqs.push({project_id:projectId,category:'constraint',title:ambiguity.slice(0,140),description:'Detected ambiguity — needs a decision.',status:'unresolved',source_message_id:userMsg.data.id,origin:'ai'});
+  }
   if (newReqs.length) { const saved = await sb.from("requirements").insert(newReqs); if (saved.error) throw new Error("Your answer was saved, but requirements could not be saved. Refresh before sending again."); }
 
   const existingScreens = screens.data ?? [];

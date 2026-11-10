@@ -16,41 +16,71 @@ export type Database = {
     Tables: {
       clarification_questions: {
         Row: {
+          answer: string
           answer_message_id: string | null
           asked_message_id: string | null
           created_at: string
+          history: Json
           id: string
+          is_current: boolean
+          meeting_id: string | null
+          owner_id: string | null
+          priority: string
           project_id: string
           question: string
           rationale: string | null
+          requirement_id: string | null
+          screen_id: string | null
           session_id: string
+          stage_key: string | null
           status: Database["public"]["Enums"]["question_status"]
+          suggested_answers: Json
           topic: string
           updated_at: string
         }
         Insert: {
+          answer?: string
           answer_message_id?: string | null
           asked_message_id?: string | null
           created_at?: string
+          history?: Json
           id?: string
+          is_current?: boolean
+          meeting_id?: string | null
+          owner_id?: string | null
+          priority?: string
           project_id: string
           question: string
           rationale?: string | null
+          requirement_id?: string | null
+          screen_id?: string | null
           session_id: string
+          stage_key?: string | null
           status?: Database["public"]["Enums"]["question_status"]
+          suggested_answers?: Json
           topic?: string
           updated_at?: string
         }
         Update: {
+          answer?: string
           answer_message_id?: string | null
           asked_message_id?: string | null
           created_at?: string
+          history?: Json
           id?: string
+          is_current?: boolean
+          meeting_id?: string | null
+          owner_id?: string | null
+          priority?: string
           project_id?: string
           question?: string
           rationale?: string | null
+          requirement_id?: string | null
+          screen_id?: string | null
           session_id?: string
+          stage_key?: string | null
           status?: Database["public"]["Enums"]["question_status"]
+          suggested_answers?: Json
           topic?: string
           updated_at?: string
         }
@@ -70,10 +100,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clarification_questions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clarification_questions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clarification_questions_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clarification_questions_screen_id_fkey"
+            columns: ["screen_id"]
+            isOneToOne: false
+            referencedRelation: "product_screens"
             referencedColumns: ["id"]
           },
           {
@@ -178,6 +229,118 @@ export type Database = {
           },
         ]
       }
+      development_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          insight_id: string
+        }
+        Insert: {
+          author_id?: string
+          body: string
+          created_at?: string
+          id?: string
+          insight_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          insight_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "development_comments_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "development_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      development_insights: {
+        Row: {
+          author_id: string
+          created_at: string
+          description: string
+          id: string
+          owner_id: string | null
+          priority: string
+          project_id: string
+          promoted_question_id: string | null
+          requirement_id: string | null
+          screen_id: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          owner_id?: string | null
+          priority?: string
+          project_id: string
+          promoted_question_id?: string | null
+          requirement_id?: string | null
+          screen_id?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          owner_id?: string | null
+          priority?: string
+          project_id?: string
+          promoted_question_id?: string | null
+          requirement_id?: string | null
+          screen_id?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "development_insights_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "development_insights_promoted_question_id_fkey"
+            columns: ["promoted_question_id"]
+            isOneToOne: false
+            referencedRelation: "clarification_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "development_insights_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "development_insights_screen_id_fkey"
+            columns: ["screen_id"]
+            isOneToOne: false
+            referencedRelation: "product_screens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discovery_sessions: {
         Row: {
           created_at: string
@@ -203,6 +366,80 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "discovery_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          active_stage: number
+          agenda: Json
+          brief: string
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          elapsed_seconds: number
+          ended_at: string | null
+          goals: string
+          id: string
+          participants: Json
+          project_id: string
+          purpose: string
+          running_since: string | null
+          started_at: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active_stage?: number
+          agenda?: Json
+          brief?: string
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          elapsed_seconds?: number
+          ended_at?: string | null
+          goals?: string
+          id?: string
+          participants?: Json
+          project_id: string
+          purpose?: string
+          running_since?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active_stage?: number
+          agenda?: Json
+          brief?: string
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          elapsed_seconds?: number
+          ended_at?: string | null
+          goals?: string
+          id?: string
+          participants?: Json
+          project_id?: string
+          purpose?: string
+          running_since?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -775,6 +1012,36 @@ export type Database = {
         }
         Returns: Json
       }
+      control_meeting: {
+        Args: { _action: string; _id: string; _minutes?: number }
+        Returns: {
+          active_stage: number
+          agenda: Json
+          brief: string
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          elapsed_seconds: number
+          ended_at: string | null
+          goals: string
+          id: string
+          participants: Json
+          project_id: string
+          purpose: string
+          running_since: string | null
+          started_at: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_meeting_demo: { Args: never; Returns: string }
       get_invitation: {
         Args: { _token: string }
@@ -801,6 +1068,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_internal_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -813,11 +1084,21 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: string
       }
+      promote_development_question: {
+        Args: { _id: string; _question: string }
+        Returns: string
+      }
       seed_demo_project: { Args: { _user: string }; Returns: string }
     }
     Enums: {
       member_role: "owner" | "editor" | "viewer" | "client" | "developer"
-      question_status: "open" | "answered" | "skipped"
+      question_status:
+        | "open"
+        | "answered"
+        | "skipped"
+        | "deferred"
+        | "needs_technical_review"
+        | "resolved"
       req_status:
         | "confirmed"
         | "proposed"
@@ -952,7 +1233,14 @@ export const Constants = {
   public: {
     Enums: {
       member_role: ["owner", "editor", "viewer", "client", "developer"],
-      question_status: ["open", "answered", "skipped"],
+      question_status: [
+        "open",
+        "answered",
+        "skipped",
+        "deferred",
+        "needs_technical_review",
+        "resolved",
+      ],
       req_status: [
         "confirmed",
         "proposed",

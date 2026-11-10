@@ -100,7 +100,7 @@ function Dashboard() {
                     <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </div>
                   <div className="mt-4 space-y-1.5">
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Spec readiness</span><span className="font-medium">{rd.score}%</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Development · {rd.label}</span><span className="font-medium" title="Share of active requirements confirmed by humans">{rd.confirmed}/{rd.total} confirmed</span></div>
                     <Progress value={rd.score} className="h-1.5" />
                     <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs text-muted-foreground">
                       <span>{rd.confirmed}/{rd.total} confirmed</span><span>{rd.unresolved} unresolved</span>

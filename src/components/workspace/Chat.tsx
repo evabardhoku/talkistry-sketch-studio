@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 import type { Message, Question } from "@/lib/types";
 import { VoiceInput } from "./VoiceInput";
 
-export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, highlightId, projectId, meeting = false, readOnly = false }: {
+export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, onBacklog, onDifferent, highlightId, projectId, meeting = false, readOnly = false }: {
   messages: Message[]; openQuestion: Question | undefined; busy: boolean; error: string | null;
   onSubmit: (text: string) => Promise<boolean>; onSkip: () => void; highlightId: string | null;
   projectId: string; meeting?: boolean; readOnly?: boolean;
+  onBacklog?:()=>void; onDifferent?:()=>void;
 }) {
   const [text, setText] = useState("");
   const [voiceActive, setVoiceActive] = useState(false);
@@ -69,9 +70,10 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, hi
               <p className="font-medium text-accent-foreground">{meeting ? "Question still open" : openQuestion.question}</p>
               {!meeting && openQuestion.rationale && <p className="mt-0.5 text-xs text-muted-foreground">Why it matters: {openQuestion.rationale}</p>}
             </div>
-            <Button size="sm" variant="ghost" onClick={onSkip} disabled={voiceActive} className="shrink-0"><SkipForward className="size-3.5" />Skip</Button>
+            <Button size="icon" variant="ghost" onClick={onSkip} disabled={voiceActive} className="shrink-0" aria-label="Add current question to backlog" title="Add to backlog"><SkipForward className="size-3.5" /></Button>
           </div>
         )}
+        {onBacklog && <div className="mb-2 flex flex-wrap gap-2"><Button size="sm" variant="ghost" disabled={busy} onClick={onBacklog}>Review unanswered questions</Button>{onDifferent&&<Button size="sm" variant="ghost" disabled={busy||voiceActive} onClick={onDifferent}>Ask a different question</Button>}</div>}
         {error && <p role="alert" className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
         {transcript && <p role="status" className="mb-2 text-xs text-primary">Transcription preview · edit your answer below before sending.</p>}
         <div className="flex items-end gap-2">
