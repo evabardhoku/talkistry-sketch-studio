@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- AI discovery turns run only in `src/lib/discovery.server.ts` via the `submitDiscoveryTurn` server fn; output is zod-validated (`src/lib/ai-schema.ts`) before persisting — keeps AI server-side and data trustworthy.
+- AI may only create `proposed`/`unresolved` requirements; `confirmed` is set by human actions that also write a `decisions` row — traceability requirement.
+- Sketch rendering is deterministic from `product_screens.components` (fixed component vocabulary in `src/lib/types.ts`); no AI images for wireframes.
+- Access is via `project_members` + `is_project_member`/`can_edit_project` security-definer functions — ready for multiple collaborators.
+- New users get a fictional sample project via `seed_demo_project` trigger on signup.
