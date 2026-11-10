@@ -19,5 +19,9 @@ export const submitDiscoveryTurn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { runDiscoveryTurn } = await import("./discovery.server");
-    return runDiscoveryTurn(context.supabase, context.userId, data);
+    try { return await runDiscoveryTurn(context.supabase, context.userId, data); }
+    catch (e) {
+      await context.supabase.from("conversation_messages").update({ meta: { skip: data.skip, turn_state: "failed" } }).eq("id", data.requestId).eq("author_id", context.userId).eq("meta->>turn_state", "processing");
+      throw e;
+    }
   });

@@ -140,14 +140,14 @@ function Workspace() {
         </div>
       )}
 
-      {meeting ? <div className="grid min-h-0 flex-1 grid-rows-2 md:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)] md:grid-rows-1"><section className="min-h-0 border-b md:border-b-0 md:border-r">{chat}</section><MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /></div> : isMobile ? (
+      {meeting && !isMobile ? <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)]"><section className="min-h-0 border-r">{chat}</section><MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /></div> : isMobile ? (
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
           <TabsList className="mx-3 mt-2 grid grid-cols-4">
             <TabsTrigger value="chat">Chat</TabsTrigger><TabsTrigger value="sketch">Sketch</TabsTrigger>
             <TabsTrigger value="reqs">Needs</TabsTrigger><TabsTrigger value="inspect" disabled={!selectedScreen}>Screen</TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="min-h-0 flex-1">{chat}</TabsContent>
-          <TabsContent value="sketch" className="min-h-0 flex-1">{canvas}</TabsContent>
+          <TabsContent value="sketch" className="min-h-0 flex-1">{meeting ? <MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /> : canvas}</TabsContent>
           <TabsContent value="reqs" className="min-h-0 flex-1">{reqPanel}</TabsContent>
           <TabsContent value="inspect" className="min-h-0 flex-1">{inspector}</TabsContent>
         </Tabs>

@@ -66,8 +66,8 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, hi
           <div className="mb-3 flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-sm">
             <HelpCircle className="mt-0.5 size-4 shrink-0 text-primary" />
             <div className="flex-1">
-              <p className="font-medium text-accent-foreground">{openQuestion.question}</p>
-              {openQuestion.rationale && <p className="mt-0.5 text-xs text-muted-foreground">Why it matters: {openQuestion.rationale}</p>}
+              <p className="font-medium text-accent-foreground">{meeting ? "Question still open" : openQuestion.question}</p>
+              {!meeting && openQuestion.rationale && <p className="mt-0.5 text-xs text-muted-foreground">Why it matters: {openQuestion.rationale}</p>}
             </div>
             <Button size="sm" variant="ghost" onClick={onSkip} disabled={voiceActive} className="shrink-0"><SkipForward className="size-3.5" />Skip</Button>
           </div>

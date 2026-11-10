@@ -3,7 +3,7 @@ import { buildExport, exportMarkdown } from "./export";
 import type { Workspace } from "./queries";
 
 const data: Workspace = {
-  project: { id: "sample", name: "Private tutoring booking platform", summary: "Parents book vetted tutors", is_demo: true, owner_id: "owner", created_at: "2026-11-10T20:00:00Z", updated_at: "2026-11-10T21:00:00Z", status: "discovery" },
+  project: { id: "sample", name: "Private tutoring booking platform", summary: "Parents book vetted tutors", is_demo: true, owner_id: "owner", created_at: "2026-11-10T20:00:00Z", updated_at: "2026-11-10T21:00:00Z" },
   requirements: [], questions: [], screens: [], connections: [], decisions: [], versions: [], comments: [], scopeChanges: [], people: [], messages: [], meId: "owner", myRole: "owner",
 };
 describe("saved specification exports", () => {
