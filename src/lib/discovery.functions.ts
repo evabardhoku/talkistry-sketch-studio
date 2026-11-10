@@ -6,6 +6,7 @@ const input = z.object({
   projectId: z.string().uuid(),
   content: z.string().trim().max(4000),
   skip: z.boolean().default(false),
+  requestId: z.string().uuid(),
 });
 
 /**

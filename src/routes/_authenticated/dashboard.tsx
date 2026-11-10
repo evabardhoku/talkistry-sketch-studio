@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
     { title: "Projects — SpecLoop" }, { name: "description", content: "Your discovery projects and specification readiness." },
     { property: "og:title", content: "Projects — SpecLoop" }, { property: "og:description", content: "Your discovery projects." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(projectsQuery()),
   pendingComponent: () => <div className="grid min-h-screen place-items-center"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>,
@@ -34,7 +35,8 @@ function NewProjectDialog() {
   async function create(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
     const { data: u } = await supabase.auth.getUser();
-    const { data, error } = await supabase.from("projects").insert({ name: name.trim(), summary: idea.trim() || null, owner_id: u.user!.id }).select("id").single();
+    if (!u.user) { toast.error("Please sign in again."); setBusy(false); return; }
+    const { data, error } = await supabase.from("projects").insert({ name: name.trim(), summary: idea.trim() || null, owner_id: u.user.id }).select("id").single();
     if (error || !data) { toast.error(error?.message ?? "Could not create project"); setBusy(false); return; }
     await supabase.from("discovery_sessions").insert({ project_id: data.id });
     if (idea.trim()) sessionStorage.setItem(PENDING_IDEA_KEY(data.id), idea.trim());
@@ -59,13 +61,25 @@ function NewProjectDialog() {
 
 function Dashboard() {
   const { data } = useSuspenseQuery(projectsQuery());
+  const [demoBusy, setDemoBusy] = useState(false);
+  const navigate = useNavigate(); const qc = useQueryClient();
+  async function createDemo() {
+    if (demoBusy) return;
+    setDemoBusy(true);
+    try {
+      const { data: id, error } = await supabase.rpc("create_meeting_demo");
+      if (error) throw new Error(error.message);
+      await qc.invalidateQueries({ queryKey: ["projects"] });
+      navigate({ to: "/projects/$projectId", params: { projectId: id } });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not create demo."); } finally { setDemoBusy(false); }
+  }
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="mx-auto max-w-5xl px-5 py-10">
+      <div className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div><h1 className="font-display text-4xl">Projects</h1><p className="mt-1 text-sm text-muted-foreground">Resume a discovery session or start a new one.</p></div>
-          <NewProjectDialog />
+          <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={demoBusy} onClick={createDemo}>{demoBusy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}Tutoring demo</Button><NewProjectDialog /></div>
         </div>
         {data.projects.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-card p-10 text-center"><Sparkles className="mx-auto mb-2 size-6 text-primary" /><p className="font-display text-2xl">No projects yet</p><p className="text-sm text-muted-foreground">Create one to begin a discovery conversation.</p></div>
@@ -99,7 +113,7 @@ function Dashboard() {
             })}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

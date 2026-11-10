@@ -765,6 +765,17 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      claim_discovery_turn: {
+        Args: {
+          _content: string
+          _project_id: string
+          _request_id: string
+          _session_id: string
+          _skip: boolean
+        }
+        Returns: Json
+      }
+      create_meeting_demo: { Args: never; Returns: string }
       get_invitation: {
         Args: { _token: string }
         Returns: {

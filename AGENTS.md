@@ -37,3 +37,8 @@ use the editor.
 - New users get a fictional sample project via `seed_demo_project` trigger on signup.
 - Collaboration permissions live in the database (member role, access expiry, baseline-only sharing via `project_members`; triggers guard confirm/estimate/accept); `can` in `src/lib/baseline.ts` only mirrors them to hide controls.
 - Approved baselines are created only by the `approve_baseline` RPC (owner-only, snapshot built server-side) and are immutable; scope changes compare new requests against the latest baseline inside the discovery AI turn.
+- Explicit microphone recordings use an authenticated transcription server function; only reviewed transcript text enters the existing discovery pipeline, and raw recordings are never persisted by the app.
+- Discovery request IDs are claimed under a database advisory lock before inference; repeated IDs never rerun AI, including uncertain outcomes.
+- Specification downloads and print views use the same saved workspace data and clearly distinguish the live draft from immutable approval snapshots.
+- Meeting mode reuses the chat and deterministic sketch renderer, keeping recording consent and approval status intact.
+- The root layout owns the single main landmark and skip link; content pages use unframed div wrappers to avoid nested main landmarks.

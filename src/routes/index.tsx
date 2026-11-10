@@ -69,7 +69,7 @@ function Landing() {
         <Logo />
         <Button asChild variant="ghost" size="sm"><Link to="/auth">Sign in</Link></Button>
       </header>
-      <main className="mx-auto max-w-6xl px-5 pb-20">
+      <div className="mx-auto max-w-6xl px-5 pb-20">
         <section className="mx-auto max-w-3xl pt-14 text-center">
           <p className="mb-4 inline-block rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">AI product sketch artist for discovery meetings</p>
           <h1 className="font-display text-5xl leading-[1.05] md:text-7xl">From conversation to <em>shared product vision.</em></h1>
@@ -90,7 +90,7 @@ function Landing() {
             return <div key={t as string}><I className="mb-3 size-5 text-primary" /><h3 className="font-medium">{t as string}</h3><p className="mt-1 text-sm text-muted-foreground">{d as string}</p></div>;
           })}
         </section>
-      </main>
+      </div>
     </div>
   );
 }
