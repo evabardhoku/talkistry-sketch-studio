@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, GitBranch, MessagesSquare, PenTool } from "lucide-react";
+import { ArrowRight, CheckCircle2, MessagesSquare, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ScreenWireframe } from "@/components/sketch/ScreenWireframe";
@@ -9,10 +9,11 @@ import type { SketchComponent, ReqStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "SpecLoop — From conversation to shared product vision" },
-    { name: "description", content: "SpecLoop guides client discovery conversations, sketches the product live and turns confirmed decisions into a structured specification." },
-    { property: "og:title", content: "SpecLoop — From conversation to shared product vision" },
-    { property: "og:description", content: "An AI product sketch artist for founders, agencies and their clients." },
+    { title: "Talkistry | Where Conversations Take Shape" },
+    { name: "description", content: "Talkistry helps teams transform product discovery conversations into visual sketches, structured requirements, and shared decisions." },
+    { property: "og:title", content: "Talkistry | Where Conversations Take Shape" },
+    { property: "og:description", content: "Talkistry helps teams transform product discovery conversations into visual sketches, structured requirements, and shared decisions." },
+    { name: "application-name", content: "Talkistry" },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Landing,
@@ -34,13 +35,14 @@ const STEPS: { q: string; a: string; screens: { name: string; c: SketchComponent
 
 function Preview() {
   const [i, setI] = useState(0);
-  const s = STEPS[i]!;
+  const s = STEPS[i];
+  if (!s) return null;
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-lift">
       <div className="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
         <span className="size-2 rounded-full bg-border" /><span className="size-2 rounded-full bg-border" /><span className="size-2 rounded-full bg-border" />
         <span className="ml-2">Interactive preview · fictional example</span>
-        <div className="ml-auto flex gap-1">{STEPS.map((_, n) => <button key={n} onClick={() => setI(n)} className={`h-1.5 w-6 rounded-full ${n <= i ? "bg-primary" : "bg-border"}`} aria-label={`Step ${n + 1}`} />)}</div>
+        <div className="ml-auto flex gap-1">{STEPS.map((_, n) => <Button variant="ghost" size="icon" key={n} onClick={() => setI(n)} className="size-7" aria-label={`Step ${n + 1}`} aria-pressed={n === i}><span className={`h-1.5 w-5 rounded-full ${n <= i ? "bg-primary" : "bg-border"}`} /></Button>)}</div>
       </div>
       <div className="grid md:grid-cols-[1fr_1.4fr]">
         <div className="space-y-3 border-b p-4 md:border-b-0 md:border-r">
@@ -70,21 +72,21 @@ function Landing() {
         <Button asChild variant="ghost" size="sm"><Link to="/auth">Sign in</Link></Button>
       </header>
       <div className="mx-auto max-w-6xl px-5 pb-20">
-        <section className="mx-auto max-w-3xl pt-14 text-center">
-          <p className="mb-4 inline-block rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">AI product sketch artist for discovery meetings</p>
-          <h1 className="font-display text-5xl leading-[1.05] md:text-7xl">From conversation to <em>shared product vision.</em></h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">SpecLoop asks the right question at the right time, sketches the product while you talk, and turns what you confirm into a specification everyone agrees on.</p>
-          <div className="mt-8 flex justify-center gap-3">
-            <Button asChild size="lg"><Link to="/auth">Start a discovery session<ArrowRight className="size-4" /></Link></Button>
+        <section className="mx-auto max-w-3xl pt-8 text-center md:pt-12">
+          <p className="mb-4 text-sm font-medium text-primary">Talkistry · Where conversations take shape.</p>
+          <h1 className="font-display text-4xl leading-[1.1] md:text-6xl">Great products begin with a conversation.</h1>
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground md:text-lg">Turn client conversations into interactive product sketches, clear requirements, and shared decisions — all in one workspace.</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg"><Link to="/auth">Start shaping your idea<ArrowRight className="size-4" /></Link></Button>
+            <Button asChild size="lg" variant="outline"><a href="#how-it-works">Explore how it works</a></Button>
           </div>
         </section>
-        <section className="mt-16"><Preview /></section>
-        <section className="mt-20 grid gap-6 md:grid-cols-4">
+        <section id="how-it-works" className="mt-10 scroll-mt-6"><Preview /></section>
+        <section className="mt-16 grid gap-8 md:grid-cols-3">
           {[
-            [MessagesSquare, "One question at a time", "Targeted clarifications about roles, rules, payments and edge cases — skip any."],
-            [PenTool, "Live product sketch", "Screens and flows redraw as answers come in, with open points flagged."],
-            [CheckCircle2, "Humans confirm", "AI only proposes. Every requirement links back to the words that support it."],
-            [GitBranch, "Evolving spec", "Personas, journeys, rules and acceptance criteria — versioned and editable."],
+            [MessagesSquare, "Guided Discovery", "AI helps uncover important requirements without turning meetings into endless interviews."],
+            [PenTool, "Live Product Sketching", "Watch ideas evolve into visual workflows and screens as decisions are made."],
+            [CheckCircle2, "Shared Understanding", "Keep clients, product teams, and developers aligned through decisions, approvals, and follow-up meetings."],
           ].map(([Icon, t, d]) => {
             const I = Icon as typeof MessagesSquare;
             return <div key={t as string}><I className="mb-3 size-5 text-primary" /><h3 className="font-medium">{t as string}</h3><p className="mt-1 text-sm text-muted-foreground">{d as string}</p></div>;

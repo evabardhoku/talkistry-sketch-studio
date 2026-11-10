@@ -1,4 +1,6 @@
-# SpecLoop enhancements
+# Talkistry enhancements
+- [ ] Focused rebrand: logo/favicon, palette, visible names, landing copy, metadata and export branding; preserve all internal contracts.
+- [ ] Verify rebrand across public and authenticated pages, mobile/desktop layouts and regression tests.
 - [x] Priority 1: Persisted meetings, editable agenda, explicit timer controls, stage boundary suggestions.
 - [x] Priority 1: Existing-question backlog with assignment, priorities, answer history, batch deferral and focused discovery.
 - [x] Priority 1: Meeting-aware AI prioritization, deduplication and progressive sketch updates.
