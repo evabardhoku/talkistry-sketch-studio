@@ -78,7 +78,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
       text: { format: { type: "json_schema", name: "discovery_turn", schema: discoveryTurnJsonSchema as unknown as Record<string, unknown>, strict: true } },
     });
     const parsed = discoveryTurnSchema.safeParse(JSON.parse(extractText(res)));
-    if (!parsed.success) throw new Error("AI response failed validation");
+    if (!parsed.success) { console.error("AI validation issues", JSON.stringify(parsed.error.issues.slice(0, 5))); throw new Error("AI response failed validation"); }
     turn = parsed.data;
   } catch (e) {
     // Keep the user's message; tell them the AI step failed so they can retry.
