@@ -35,6 +35,13 @@ export const discoveryTurnSchema = z.object({
   connections: z.array(z.object({
     from: z.string(), to: z.string(), label: z.string().max(40),
   })).max(12),
+  scope_changes: z.array(z.object({
+    kind: z.enum(["new_functionality", "changed_behavior", "conflict", "removed_assumption"]),
+    baseline_ref: z.number().int(),
+    after_quote: z.string().max(600),
+    summary: z.string().max(200),
+    explanation: z.string().max(500),
+  })).max(5),
 });
 export type DiscoveryTurn = z.infer<typeof discoveryTurnSchema>;
 
@@ -42,7 +49,7 @@ const str = (max: number) => ({ type: "string", maxLength: max });
 // Hand-written JSON schema mirroring the zod schema (strict mode: all keys required).
 export const discoveryTurnJsonSchema = {
   type: "object", additionalProperties: false,
-  required: ["reply", "change_summary", "current_question_answered", "requirement_suggestions", "ambiguities", "next_question", "screens", "connections"],
+  required: ["reply", "change_summary", "current_question_answered", "requirement_suggestions", "ambiguities", "next_question", "screens", "connections", "scope_changes"],
   properties: {
     reply: str(1200),
     change_summary: str(400),
@@ -62,5 +69,9 @@ export const discoveryTurnJsonSchema = {
         unresolved: { type: "array", items: str(160) }, change_note: str(160) } } },
     connections: { type: "array", items: { type: "object", additionalProperties: false, required: ["from", "to", "label"],
       properties: { from: { type: "string" }, to: { type: "string" }, label: str(40) } } },
+    scope_changes: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["kind", "baseline_ref", "after_quote", "summary", "explanation"],
+      properties: { kind: { type: "string", enum: ["new_functionality", "changed_behavior", "conflict", "removed_assumption"] },
+        baseline_ref: { type: "integer" }, after_quote: str(600), summary: str(200), explanation: str(500) } } },
   },
 } as const;

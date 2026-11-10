@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateResponse, GatewayError } from "@lovable.dev/ai-gateway";
 import type { Database } from "@/integrations/supabase/types";
+import { parseBaseline } from "./baseline";
 import { discoveryTurnJsonSchema, discoveryTurnSchema, type DiscoveryTurn } from "./ai-schema";
 
 type DB = SupabaseClient<Database>;
@@ -16,7 +17,8 @@ Rules:
 - connections: navigation between screens by key (existing or new); return only new links.
 - If the user skipped the question, don't push; move to another valuable topic.
 - If the user requests a change to a screen, update that screen accordingly.
-- next_question null only if discovery feels complete.`;
+- next_question null only if discovery feels complete.
+- scope_changes: ONLY when APPROVED_BASELINE is present. Compare the client's latest message against the approved baseline requirements. Flag new functionality not in the baseline, changed behavior of a baseline item, a conflict with a baseline item, or a removed assumption. baseline_ref = index of the affected baseline requirement, or -1 for brand-new functionality. after_quote = exact words from the client's latest message. explanation = plain-language reason it may affect scope. Never estimate cost or time. Empty array if nothing differs.`;
 
 function extractText(res: unknown): string {
   const r = res as { output_text?: string; output?: { type: string; content?: { type: string; text?: string }[] }[] };
@@ -53,6 +55,8 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     sb.from("clarification_questions").select("id,question,status,topic").eq("project_id", projectId).order("created_at"),
     sb.from("product_screens").select("id,key,name,purpose,user_role,components,unresolved").eq("project_id", projectId).order("position"),
   ]);
+  const { data: baselineRow } = await sb.from("specification_versions").select("id,version,content").eq("project_id", projectId).eq("kind", "baseline").order("version", { ascending: false }).limit(1).maybeSingle();
+  const baseline = baselineRow ? parseBaseline(baselineRow.content) : null;
   const openQ = (qs.data ?? []).filter((q) => q.status === "open").at(-1);
   const contextBlock = JSON.stringify({
     product: { name: project.name, summary: project.summary },
@@ -61,6 +65,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     current_open_question: openQ?.question ?? null,
     screens: (screens.data ?? []).map(({ id: _id, ...s }) => s),
     user_skipped: d.skip,
+    APPROVED_BASELINE: baseline ? { version: baselineRow!.version, requirements: baseline.requirements.map((r, i) => ({ index: i, category: r.category, title: r.title, description: r.description })) } : null,
   });
   const history = [...(msgs.data ?? [])].reverse().map((m) => `${m.role === "user" ? "CLIENT" : "SPECLOOP"}: ${m.content}`).join("\n");
 
@@ -139,6 +144,22 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
     .map((c) => ({ project_id: projectId, from_screen_id: keyToId.get(c.from)!, to_screen_id: keyToId.get(c.to)!, label: c.label }));
   if (links.length) await sb.from("workflow_connections").upsert(links, { onConflict: "from_screen_id,to_screen_id", ignoreDuplicates: true });
 
+  if (baseline && baselineRow && !d.skip && turn.scope_changes.length) {
+    const rows = turn.scope_changes.map((c) => {
+      const before = c.baseline_ref >= 0 ? baseline.requirements[c.baseline_ref] : undefined;
+      // Keep evidence exact: use the AI quote only if it really appears in the user's message.
+      const after = c.after_quote && content.includes(c.after_quote) ? c.after_quote : content;
+      return {
+        project_id: projectId, baseline_id: baselineRow.id, source_message_id: userMsg.data.id, kind: c.kind,
+        summary: c.summary, explanation: c.explanation, after_text: after,
+        before_text: before ? `${before.title}${before.description ? " — " + before.description : ""}` : null,
+        before_requirement_id: before?.id ?? null,
+      };
+    });
+    const sc = await sb.from("scope_changes").insert(rows);
+    if (sc.error) console.error("scope change insert failed", sc.error.message);
+  }
+
   await sb.from("projects").update({ updated_at: new Date().toISOString() }).eq("id", projectId);
-  return { changeSummary: turn.change_summary, changedScreenKeys: turn.screens.map((s) => s.key), newRequirements: newReqs.length };
+  return { scopeChanges: baseline ? turn.scope_changes.length : 0, changeSummary: turn.change_summary, changedScreenKeys: turn.screens.map((s) => s.key), newRequirements: newReqs.length };
 }
