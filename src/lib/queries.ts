@@ -54,7 +54,7 @@ export const accessQuery = (projectId: string) => queryOptions({
     const uid = s.session?.user.id ?? "";
     const [project, member] = await Promise.all([
       must(supabase.from("projects").select("*").eq("id", projectId).single()) as Promise<Project>,
-      must(supabase.from("project_members").select("*").eq("project_id", projectId).eq("user_id", uid).maybeSingle()),
+      supabase.from("project_members").select("*").eq("project_id", projectId).eq("user_id", uid).maybeSingle().then((r) => r.data),
     ]);
     return { project, member };
   },
