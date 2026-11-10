@@ -1,4 +1,10 @@
 # SpecLoop enhancements
+- [ ] Priority 1: Persisted meetings, editable agenda, explicit timer controls, stage boundary suggestions.
+- [ ] Priority 1: Existing-question backlog with assignment, priorities, answer history, batch deferral and focused discovery.
+- [ ] Priority 1: Meeting-aware AI prioritization, deduplication and progressive sketch updates.
+- [ ] Priority 2: Protected development room, explicit promotion, follow-up briefs and saved closure summaries.
+- [ ] Priority 3: Transparent readiness indicators and targeted rule tests.
+- [ ] Bookstore end-to-end verification, timer refresh checks, access checks and regression tests.
 - [x] Push-to-record transcription with consent, cancellation, and editable drafts.
 - [x] Meeting presentation with question, screen switching, and approval status.
 - [x] Saved-data Markdown, JSON, and print/PDF exports.
