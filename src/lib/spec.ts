@@ -2,14 +2,15 @@ import type { Project, Question, Requirement, ScreenRow, Connection } from "./ty
 
 export interface Readiness { confirmed: number; total: number; openQuestions: number; unresolved: number; score: number }
 
-/** Readiness = share of active requirements a human has confirmed, minus a penalty per open item. */
+/** Readiness = share of active requirements a human has confirmed, reduced 2% per open item (max 50%). */
 export function computeReadiness(reqs: Pick<Requirement, "status">[], questions: Pick<Question, "status">[]): Readiness {
   const active = reqs.filter((r) => r.status !== "excluded" && r.status !== "deferred");
   const confirmed = active.filter((r) => r.status === "confirmed").length;
   const unresolved = active.filter((r) => r.status === "unresolved").length;
   const openQuestions = questions.filter((q) => q.status === "open").length;
   const base = active.length ? confirmed / active.length : 0;
-  const score = Math.max(0, Math.min(100, Math.round(base * 100 - unresolved * 3 - openQuestions * 2)));
+  const penalty = Math.min(0.5, (unresolved + openQuestions) * 0.02);
+  const score = Math.round(base * 100 * (1 - penalty));
   return { confirmed, total: active.length, openQuestions, unresolved, score };
 }
 
