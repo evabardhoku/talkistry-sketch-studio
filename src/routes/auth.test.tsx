@@ -34,8 +34,8 @@ describe("Email confirmation recovery", () => {
     render(<AuthPage />);
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "test@example.com" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Example-pass-9284" } });
-    fireEvent.click(screen.getByRole("button", { name: "Sign in", exact: true }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: /^Sign in$/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Sign in$/ })).toBeEnabled());
     expect(auth.signInWithPassword).toHaveBeenCalledTimes(1);
     expect(nav).not.toHaveBeenCalled();
   });

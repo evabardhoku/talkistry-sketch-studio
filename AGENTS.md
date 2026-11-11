@@ -48,3 +48,4 @@ use the editor.
 - Discovery revision policy permits only unreviewed AI drafts to change; confirmed or human-reviewed requirements require separately reviewable proposals.
 - Rebranding changes presentation only; retain storage keys, export format identifiers, routes and database contracts for compatibility with existing data.
 - The header logo and favicon reuse one public SVG asset so the app identity stays consistent at small sizes.
+- Email signup and resend links return to the public auth page before navigating to protected content, so confirmation can establish a session first.
