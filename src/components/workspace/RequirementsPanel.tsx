@@ -45,7 +45,7 @@ export function RequirementsPanel({ project, requirements, onChanged, onShowSour
         {list.map((r) => <RequirementItem key={r.id + r.updated_at} req={r} onChanged={onChanged} onShowSource={onShowSource} />)}
       </div>
       <div className="shrink-0 space-y-2 border-t p-3">
-        {mayEdit && onGuidedSubmit && <BlueprintGuide onSubmit={onGuidedSubmit} disabled={busy} compact />}
+        {mayEdit && onGuidedSubmit && <BlueprintGuide onSubmit={onGuidedSubmit} disabled={busy ?? false} compact />}
         {!mayEdit ? <p className="text-center text-xs text-muted-foreground">You have read-only access.</p> : adding ? (
           <form className="space-y-2" onSubmit={async (e) => {
             e.preventDefault();

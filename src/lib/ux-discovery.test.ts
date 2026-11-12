@@ -4,7 +4,7 @@ import { buildGuidedDiscovery } from './blueprint-guide';
 
 describe('backlog default', () => {
   it('shows only Open questions by default while retaining other statuses', () => {
-    const questions = ['open', 'deferred', 'answered', 'resolved'].map(status => ({status, topic: 'general', meeting_id: null, stage_key: null}));
+    const questions = (['open', 'deferred', 'answered', 'resolved'] as const).map(status => ({status, topic: 'general', meeting_id: null, stage_key: null}));
     expect(filterBacklog(questions).map(q => q.status)).toEqual(['open']);
     expect(filterBacklog(questions, 'all')).toHaveLength(4);
   });
