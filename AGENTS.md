@@ -50,3 +50,4 @@ use the editor.
 - The header logo and favicon reuse one public SVG asset so the app identity stays consistent at small sizes.
 - Email signup and resend links return to the public auth page before navigating to protected content, so confirmation can establish a session first.
 - Guided blueprint sections collect reviewed answers locally and submit one turn through the existing discovery function; proposals use the same saved requirements and separate human confirmation.
+- The public `/demo` route renders static fictional fixtures (`src/lib/demo-data.ts`) with simulated roles; it never touches the database or AI, so it needs no sign-up and costs nothing.
