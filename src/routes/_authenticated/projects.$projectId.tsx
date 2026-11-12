@@ -27,6 +27,7 @@ import { QuestionBacklog } from "@/components/workspace/QuestionBacklog";
 import { DevelopmentRoom } from "@/components/workspace/DevelopmentRoom";
 import { parseAgenda } from "@/lib/meeting";
 import { saveQuestion } from "@/lib/meeting-api";
+import { ActionTooltip } from '@/components/ActionTooltip';
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({ meta: [
@@ -108,12 +109,12 @@ function Workspace() {
   const chat = <Chat key={projectId} projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t,false,openQuestion?.id)} onSkip={() => void deferCurrent()} onBacklog={()=>openSide('questions')} onDifferent={async()=>{await deferCurrent();const next=data.questions.find(q=>q.id!==openQuestion?.id&&q.status==='open');if(next){await saveQuestion(next.id,{is_current:true});await refresh();}else openSide('questions');}} highlightId={highlight} />;
   const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
   const reqPanel = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-col">
       <div className="flex shrink-0 border-b text-sm">
         <select aria-label="Workspace panel" value={sideTab} onChange={e=>{setSideTab(e.target.value as typeof sideTab);setQuestionStage(undefined);}} className="h-11 min-w-0 flex-1 bg-card px-3 text-sm"><option value="reqs">Requirements</option><option value="scope">Scope changes{openScope ? ` · ${openScope}` : ''}</option><option value="meetings">Meeting agenda</option><option value="questions">Question backlog</option>{['owner','editor','developer'].includes(data.myRole??'')&&<option value="development">Development Room · internal</option>}</select>
       </div>
       <div className="min-h-0 flex-1">
-        {sideTab === "reqs" ? <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} />
+        {sideTab === "reqs" ? <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} busy={busy} onGuidedSubmit={text => send(text)} />
           : sideTab === 'scope' ? <ScopeChangesPanel changes={data.scopeChanges} baselines={baselines} projectId={projectId} />
           : sideTab === 'meetings' ? <MeetingPanel data={data} onChanged={refresh} onReview={key=>openSide('questions',key)}/>
           : sideTab === 'questions' ? <QuestionBacklog data={data} onChanged={refresh} onAnswer={(text,id)=>send(text,false,id)} stageKey={questionStage}/>
@@ -131,35 +132,35 @@ function Workspace() {
         <span className="text-muted-foreground">/</span>
         <h1 className="truncate text-sm font-medium">{data.project.name}</h1>
         {meeting && data.project.is_demo && <span className="shrink-0 text-xs text-primary">Demo</span>}
-        <Button size="icon" variant="ghost" className="min-h-11 min-w-11 shrink-0" aria-label={meeting ? "Exit presentation mode" : "Enter presentation mode"} title={meeting ? "Exit presentation mode" : "Enter presentation mode"} aria-pressed={meeting} onClick={() => { setMeeting((v) => !v); setSelected(null); }}><Presentation className="size-4" /></Button>
+        <ActionTooltip label={meeting ? 'Exit presentation mode' : 'Enter presentation mode'}><Button size="icon" variant="ghost" className="min-h-11 min-w-11 shrink-0" aria-label={meeting ? "Exit presentation mode" : "Enter presentation mode"} aria-pressed={meeting} onClick={() => { setMeeting((v) => !v); setSelected(null); }}><Presentation className="size-4" /></Button></ActionTooltip>
         <div className={`${meeting ? "hidden" : "ml-auto hidden items-center gap-2 2xl:flex"}`}>
           <span className="text-xs text-muted-foreground">Development: {readiness.label} · {readiness.confirmed}/{readiness.total} confirmed</span>
           <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions{baselines[0] ? ` · v${baselines[0].version}` : ""}</Link></Button>
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Product Blueprint</Link></Button>
-          <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
+          <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>
         </div>
-        <Button asChild size="sm" variant="ghost" className={`${meeting ? "hidden" : "ml-auto 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open product blueprint"><FileText className="size-4" /></Link></Button>
+        <ActionTooltip label="Generate Spec · Product Blueprint"><Button asChild size="icon" variant="ghost" className={`${meeting ? "hidden" : "ml-auto shrink-0 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open product blueprint"><FileText className="size-4" /></Link></Button></ActionTooltip>
       </AppHeader>
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2"><Button size="sm" variant="outline" onClick={()=>openSide('meetings')}>Meetings & agenda</Button><Button size="sm" variant="ghost" onClick={()=>openSide('questions')}>Question Backlog · {readiness.decisionBacklog} decisions</Button>{['owner','editor','developer'].includes(data.myRole??'')&&<Button size="sm" variant="ghost" onClick={()=>openSide('development')}>Development Room</Button>}{activeMeeting&&<div className="ml-auto flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}</div>
       {!meeting && <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-card px-3 py-2 2xl:hidden">
         <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
         <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions</Link></Button>
-        {!isMobile && <Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>}
+        {!isMobile && <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>}
       </div>}
 
       {data.project.is_demo && !guideHidden && !meeting && (
         <div className="flex items-start gap-3 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">
           <p className="flex-1"><b>Fictional demo:</b> Private tutoring booking platform · sample conversations and stakeholder notes are not real client data.</p>
-          <Button variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={() => setGuideHidden(true)} aria-label="Hide guide"><X className="size-3.5" /></Button>
+          <ActionTooltip label="Dismiss demo notice"><Button variant="ghost" size="icon" className="min-h-11 min-w-11 shrink-0" onClick={() => setGuideHidden(true)} aria-label="Hide guide"><X className="size-3.5" /></Button></ActionTooltip>
         </div>
       )}
 
-      {meeting && !isMobile ? <div className="flex min-h-0 flex-1"><section className="min-h-0 w-[38%] border-r">{chat}</section><div className="min-w-0 flex-1"><MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /></div>{panelOpen&&<aside className="w-[320px] shrink-0 border-l">{reqPanel}</aside>}</div> : isMobile ? (
+      {meeting && !isMobile ? <div className="relative flex min-h-0 flex-1"><section className="min-h-0 min-w-0 w-[38%] border-r">{chat}</section><div className="min-w-0 flex-1"><MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /></div>{panelOpen&&<aside className="absolute inset-y-0 right-0 z-20 w-[320px] max-w-full border-l bg-card shadow-lift xl:static xl:shrink-0">{reqPanel}</aside>}</div> : isMobile ? (
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
           <TabsList className="mx-3 mt-2 grid grid-cols-4">
             <TabsTrigger value="chat">Chat</TabsTrigger><TabsTrigger value="sketch">Sketch</TabsTrigger>
-            <TabsTrigger value="reqs">Needs</TabsTrigger><TabsTrigger value="inspect" disabled={!selectedScreen}>Screen</TabsTrigger>
+            <TabsTrigger value="reqs">Context</TabsTrigger><TabsTrigger value="inspect" disabled={!selectedScreen}>Screen</TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="min-h-0 flex-1">{chat}</TabsContent>
           <TabsContent value="sketch" className="min-h-0 flex-1">{meeting ? <MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /> : canvas}</TabsContent>
@@ -167,14 +168,14 @@ function Workspace() {
           <TabsContent value="inspect" className="min-h-0 flex-1">{inspector}</TabsContent>
         </Tabs>
       ) : (
-        <div className="flex min-h-0 flex-1">
-          <section className="flex w-[340px] shrink-0 flex-col border-r bg-background 2xl:w-[440px]">{chat}</section>
+        <div className="relative flex min-h-0 flex-1">
+          <section className="flex min-w-0 w-[320px] shrink-0 flex-col border-r bg-background xl:w-[340px] 2xl:w-[440px]">{chat}</section>
           <section className="relative min-w-0 flex-1">
             <div className="absolute left-4 top-3 z-10 max-w-[calc(100%-2rem)] rounded-md border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-soft backdrop-blur">Sketch: {sketchReadiness(data.screens,data.connections)} · {data.screens.length} proposed screens</div>
             {canvas}
           </section>
-          {inspector ? <div className="w-[300px] shrink-0 border-l xl:w-[340px]">{inspector}</div>
-            : panelOpen && <aside className="w-[280px] shrink-0 border-l bg-card xl:w-[340px]">{reqPanel}</aside>}
+          {inspector ? <div className="absolute inset-y-0 right-0 z-20 w-[320px] max-w-full border-l bg-card shadow-lift xl:static xl:w-[340px] xl:shrink-0">{inspector}</div>
+            : panelOpen && <aside className="absolute inset-y-0 right-0 z-20 w-[320px] max-w-full border-l bg-card shadow-lift xl:static xl:w-[340px] xl:shrink-0">{reqPanel}</aside>}
         </div>
       )}
     </div>
