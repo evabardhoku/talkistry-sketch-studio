@@ -7,6 +7,7 @@ import { ScreenWireframe } from "./ScreenWireframe";
 import { CommentThread } from "@/components/review/CommentThread";
 import { useReview } from "@/components/review/ReviewContext";
 import { can } from "@/lib/baseline";
+import { ActionTooltip } from '@/components/ActionTooltip';
 
 export function ScreenInspector({ screen, screens, connections, onClose, onRequestChange, onSelect, busy }: {
   screen: ScreenRow; screens: ScreenRow[]; connections: Connection[]; onClose: () => void;
@@ -19,15 +20,15 @@ export function ScreenInspector({ screen, screens, connections, onClose, onReque
   const inc = connections.filter((c) => c.to_screen_id === screen.id);
   const unresolved = parseStrings(screen.unresolved);
   return (
-    <aside className="flex h-full w-full flex-col bg-card">
+    <aside className="flex h-full min-h-0 w-full min-w-0 flex-col bg-card">
       <div className="flex items-start justify-between gap-2 border-b p-4">
-        <div>
+        <div className="min-w-0 break-words">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{screen.user_role || "General"} screen</div>
           <h3 className="font-display text-2xl leading-tight">{screen.name}</h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close inspector"><X className="size-4" /></Button>
+        <ActionTooltip label="Close screen details"><Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="Close inspector"><X className="size-4" /></Button></ActionTooltip>
       </div>
-      <div className="flex-1 space-y-5 overflow-y-auto p-4 text-sm">
+      <div className="min-h-0 min-w-0 flex-1 space-y-5 overflow-y-auto break-words p-4 text-sm">
         <section><h4 className="mb-1 text-xs font-medium text-muted-foreground">Purpose</h4><p>{screen.purpose || "—"}</p></section>
         {screen.change_note && <section className="rounded-lg bg-primary-soft p-2.5 text-xs text-accent-foreground">Last change: {screen.change_note}</section>}
         {unresolved.length > 0 && (
