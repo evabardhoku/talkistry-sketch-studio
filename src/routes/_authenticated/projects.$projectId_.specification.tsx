@@ -18,6 +18,7 @@ import { submitDiscoveryTurn } from '@/lib/discovery.functions';
 import { BlueprintGuide } from '@/components/workspace/BlueprintGuide';
 import { can } from '@/lib/baseline';
 import { toast } from 'sonner';
+import { ActionTooltip } from '@/components/ActionTooltip';
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId_/specification")({
   head: () => ({ meta: [
@@ -67,8 +68,8 @@ function SpecPage() {
     <ReviewContext.Provider value={{ projectId, meId: data.meId, myRole: data.myRole, people: data.people, comments: data.comments, onChanged: refresh }}>
     <div className="no-print min-h-screen">
       <AppHeader>
-        <Link to="/projects/$projectId" params={{ projectId }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Workspace</Link>
-        <Button asChild size="sm" className="ml-auto"><Link to="/projects/$projectId/versions" params={{ projectId }}><Save className="size-4" />Versions & approval</Link></Button>
+        <Link to="/projects/$projectId" params={{ projectId }} className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4 shrink-0" /><span className="truncate">Workspace</span></Link>
+        <ActionTooltip label="Versions & approval"><Button asChild size="sm" className="ml-auto shrink-0"><Link to="/projects/$projectId/versions" params={{ projectId }} aria-label="Versions & approval"><Save className="size-4" /><span className="hidden sm:inline">Versions & approval</span></Link></Button></ActionTooltip>
       </AppHeader>
       <div className="mx-auto max-w-4xl px-5 py-10">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Product Blueprint · {rd.label} · {rd.confirmed}/{rd.total} requirements confirmed{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
