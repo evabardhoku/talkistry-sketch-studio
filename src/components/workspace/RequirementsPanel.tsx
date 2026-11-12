@@ -9,11 +9,12 @@ import { addHumanRequirement } from "@/lib/requirements-api";
 import { RequirementItem } from "./RequirementItem";
 import { useReview } from "@/components/review/ReviewContext";
 import { can } from "@/lib/baseline";
+import { BlueprintGuide } from './BlueprintGuide';
 
 const FILTERS: (ReqStatus | "all")[] = ["all", "proposed", "unresolved", "confirmed", "deferred", "excluded"];
 
-export function RequirementsPanel({ project, requirements, onChanged, onShowSource }: {
-  project: Project; requirements: Requirement[]; onChanged: () => void; onShowSource: (id: string) => void;
+export function RequirementsPanel({ project, requirements, onChanged, onShowSource, onGuidedSubmit, busy }: {
+  project: Project; requirements: Requirement[]; onChanged: () => void; onShowSource: (id: string) => void; onGuidedSubmit?: (text: string) => Promise<boolean>; busy?: boolean;
 }) {
   const [filter, setFilter] = useState<ReqStatus | "all">("all");
   const [adding, setAdding] = useState(false);
@@ -25,25 +26,26 @@ export function RequirementsPanel({ project, requirements, onChanged, onShowSour
   const list = requirements.filter((r) => filter === "all" || r.status === filter);
   const count = (s: ReqStatus) => requirements.filter((r) => r.status === s).length;
   return (
-    <div className="flex h-full flex-col">
-      <div className="space-y-3 border-b p-4">
+    <div className="flex h-full min-h-0 min-w-0 flex-col">
+      <div className="shrink-0 space-y-3 border-b p-4">
         <div>
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Project context</div>
-          <p className="mt-1 text-sm">{project.summary || "No summary yet — it is taken from your first description."}</p>
+          <p className="mt-1 break-words text-sm">{project.summary || "No summary yet — it is taken from your first description."}</p>
         </div>
         <div className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
-            <button key={f} onClick={() => setFilter(f)} className={cn("rounded-full border px-2.5 py-0.5 text-xs", filter === f ? "border-primary bg-primary-soft text-primary" : "text-muted-foreground hover:bg-muted")}>
+            <Button key={f} size="sm" variant="ghost" onClick={() => setFilter(f)} className={cn("h-7 rounded-md border px-2 text-xs", filter === f ? "border-primary bg-primary-soft text-primary" : "text-muted-foreground hover:bg-muted")}>
               {f === "all" ? `All ${requirements.length}` : `${STATUS_LABEL[f]} ${count(f)}`}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto p-4">
+      <div className="min-h-0 min-w-0 flex-1 space-y-2 overflow-y-auto p-4">
         {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nothing here yet.</p>}
         {list.map((r) => <RequirementItem key={r.id + r.updated_at} req={r} onChanged={onChanged} onShowSource={onShowSource} />)}
       </div>
-      <div className="border-t p-3">
+      <div className="shrink-0 space-y-2 border-t p-3">
+        {mayEdit && onGuidedSubmit && <BlueprintGuide onSubmit={onGuidedSubmit} disabled={busy ?? false} compact />}
         {!mayEdit ? <p className="text-center text-xs text-muted-foreground">You have read-only access.</p> : adding ? (
           <form className="space-y-2" onSubmit={async (e) => {
             e.preventDefault();
@@ -58,7 +60,7 @@ export function RequirementsPanel({ project, requirements, onChanged, onShowSour
             <div className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button><Button size="sm" type="submit">{mayConfirm ? "Add as confirmed" : "Propose"}</Button></div>
           </form>
         ) : (
-          <Button variant="outline" size="sm" className="w-full" onClick={() => setAdding(true)}><Plus className="size-4" />{mayConfirm ? "Add requirement manually" : "Propose a requirement or constraint"}</Button>
+          <Button variant="ghost" size="sm" className="h-auto w-full whitespace-normal py-2" onClick={() => setAdding(true)}><Plus className="size-4" />{mayConfirm ? "Add requirement manually" : "Propose a requirement"}</Button>
         )}
       </div>
     </div>

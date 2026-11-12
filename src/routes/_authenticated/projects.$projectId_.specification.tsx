@@ -12,6 +12,13 @@ import { ReviewContext } from "@/components/review/ReviewContext";
 import type { Requirement } from "@/lib/types";
 import { ExportControls } from "@/components/workspace/ExportControls";
 import { PrintSpecification } from "@/components/workspace/PrintSpecification";
+import { useServerFn } from '@tanstack/react-start';
+import { useState } from 'react';
+import { submitDiscoveryTurn } from '@/lib/discovery.functions';
+import { BlueprintGuide } from '@/components/workspace/BlueprintGuide';
+import { can } from '@/lib/baseline';
+import { toast } from 'sonner';
+import { ActionTooltip } from '@/components/ActionTooltip';
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId_/specification")({
   head: () => ({ meta: [
@@ -37,6 +44,18 @@ function SpecPage() {
   const { projectId } = Route.useParams();
   const qc = useQueryClient();
   const { data } = useSuspenseQuery(workspaceQuery(projectId));
+  const submit = useServerFn(submitDiscoveryTurn);
+  const [busy, setBusy] = useState(false);
+  const guidedSubmit = async (content: string) => {
+    if (busy) return false;
+    setBusy(true);
+    try {
+      await submit({ data: { projectId, content, skip: false, requestId: crypto.randomUUID() } });
+      await qc.invalidateQueries({ queryKey: ['workspace', projectId] });
+      toast.success('Proposals saved for review');
+      return true;
+    } finally { setBusy(false); }
+  };
   const refresh = () => qc.invalidateQueries({ queryKey: ["workspace", projectId] });
   const spec = buildSpec(data.project, data.requirements, data.questions, data.screens, data.connections);
   const rd = computeReadiness(data.requirements, data.questions);
@@ -49,8 +68,8 @@ function SpecPage() {
     <ReviewContext.Provider value={{ projectId, meId: data.meId, myRole: data.myRole, people: data.people, comments: data.comments, onChanged: refresh }}>
     <div className="no-print min-h-screen">
       <AppHeader>
-        <Link to="/projects/$projectId" params={{ projectId }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Workspace</Link>
-        <Button asChild size="sm" className="ml-auto"><Link to="/projects/$projectId/versions" params={{ projectId }}><Save className="size-4" />Versions & approval</Link></Button>
+        <Link to="/projects/$projectId" params={{ projectId }} className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4 shrink-0" /><span className="truncate">Workspace</span></Link>
+        <ActionTooltip label="Versions & approval"><Button asChild size="sm" className="ml-auto shrink-0"><Link to="/projects/$projectId/versions" params={{ projectId }} aria-label="Versions & approval"><Save className="size-4" /><span className="hidden sm:inline">Versions & approval</span></Link></Button></ActionTooltip>
       </AppHeader>
       <div className="mx-auto max-w-4xl px-5 py-10">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Product Blueprint · {rd.label} · {rd.confirmed}/{rd.total} requirements confirmed{baselines[0] && ` · v${baselines[0].version} approved ${formatDistanceToNow(new Date(baselines[0].created_at), { addSuffix: true })}`}</p>
@@ -63,7 +82,11 @@ function SpecPage() {
           <p className="mb-3">{spec.overview.summary || "—"}</p>
           {spec.overview.goals.length > 0 && list(spec.overview.goals)}
         </Section>
-        <Section n={2} title="User personas" empty={!spec.personas.length}>{list(spec.personas)}</Section>
+        <section className="border-t py-8">
+          <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"><h2 className="flex min-w-0 items-baseline gap-3"><span className="font-mono text-xs text-muted-foreground">02</span><span className="font-display text-3xl">User personas</span></h2>{can.edit(data.myRole) && <BlueprintGuide onSubmit={guidedSubmit} disabled={busy} />}</div>
+          {spec.personas.length ? list(spec.personas) : <p className="text-sm text-muted-foreground">No confirmed user personas yet.</p>}
+          {data.requirements.some(r=>r.category==='user_role' && r.status==='proposed') && <div className="mt-4"><h3 className="mb-2 text-xs font-medium text-muted-foreground">Persona proposals · awaiting confirmation</h3>{list(data.requirements.filter(r=>r.category==='user_role' && r.status==='proposed'))}</div>}
+        </section>
         <Section n={3} title="Main user journeys" empty={!spec.journeys.length}>
           <ol className="space-y-2">{spec.journeys.map((j) => (
             <li key={j.screen} className="rounded-lg border bg-card p-3 text-sm">
