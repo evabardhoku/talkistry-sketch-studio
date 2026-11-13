@@ -63,8 +63,14 @@ function Canvas({ screens, connections, selectedId, onSelect, recentIds, editabl
     const row = { layout_x: Math.round(n.position.x), layout_y: Math.round(n.position.y), layout_w: Math.round(n.width ?? n.measured?.width ?? 232), layout_h: Math.round(n.height ?? n.measured?.height ?? 290), ...patch };
     const r = await supabase.from('product_screens').update(row).eq('id', id);
     if (r.error) { toast.error('Layout not saved: ' + r.error.message); return; }
+    // First manual edit pins every automatically placed page, so later changes never shift them.
+    for (const s of screens) {
+      if (s.id === id || isManual(s)) continue;
+      const o = flow.getNode(s.id); if (!o) continue;
+      await supabase.from('product_screens').update({ layout_x: Math.round(o.position.x), layout_y: Math.round(o.position.y), layout_w: Math.round(o.width ?? 232), layout_h: Math.round(o.height ?? 290) }).eq('id', s.id);
+    }
     await onLayoutSaved();
-  }, [flow, onLayoutSaved]);
+  }, [flow, onLayoutSaved, screens]);
 
   resizedRef.current = (id, b) => void persist(id, { layout_x: Math.round(b.x), layout_y: Math.round(b.y), layout_w: Math.round(b.width), layout_h: Math.round(b.height) });
 

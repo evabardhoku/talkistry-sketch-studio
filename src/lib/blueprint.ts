@@ -17,10 +17,10 @@ export function stageForCategory(category: string): StageKey {
 }
 
 const KEYWORDS: [StageKey, RegExp][] = [
-  ['users', /\b(role|user type|persona|permission|admin|stakeholder|who can|access)\b/i],
+  ['users', /\b(role|user type|persona|permission|admin|stakeholder|who can|access|profile|guest|sign in|account)\b/i],
   ['rules', /\b(rule|price|pricing|payment|pay|subscription|data|validat|integration|tax|refund|limit|policy|offline|licen[cs]e)\b/i],
   ['pages', /\b(page|screen|navigation|menu|layout|dashboard)\b/i],
-  ['workflows', /\b(flow|journey|step|checkout|book|purchase|notify|process|device)\b/i],
+  ['workflows', /\b(flow|journey|step|checkout|book|purchase|buy|listen|download|notify|process|device)\b/i],
   ['vision', /\b(goal|objective|problem|audience|scope|vision|value|mvp)\b/i],
   ['review', /\b(approv|sign[- ]off|acceptance)\b/i],
 ];
