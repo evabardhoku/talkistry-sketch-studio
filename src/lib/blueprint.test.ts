@@ -9,7 +9,7 @@ describe('blueprint stages', () => {
     expect(stageForQuestion(q({ question: 'Should audiobooks be available offline under the licence?' }))).toBe('rules');
   });
   it('an explicit stage choice wins over keywords', () => {
-    expect(stageForQuestion(q({ blueprint_stage: 'users', question: 'payment?' }))).toBe('rules' === 'x' ? 'rules' : 'users');
+    expect(stageForQuestion(q({ blueprint_stage: 'users', question: 'payment?' }))).toBe('users');
   });
   it('a stage is complete only when every active requirement is confirmed and no question is open', () => {
     const reqs = [{ category: 'goal', status: 'confirmed' }, { category: 'goal', status: 'proposed' }] as never[];

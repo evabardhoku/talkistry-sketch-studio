@@ -1,3 +1,4 @@
+import { stageForQuestion } from './blueprint';
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateResponse, GatewayError } from "@lovable.dev/ai-gateway";
 import type { Database } from "@/integrations/supabase/types";
@@ -140,7 +141,7 @@ export async function runDiscoveryTurn(sb: DB, userId: string, d: { projectId: s
       }
       continue;
     }
-    const r=await sb.from('clarification_questions').insert({project_id:projectId,session_id:session.id,question:q.question,topic:q.topic || 'general',rationale:q.rationale,priority:q.priority,status:q.current?'open':'deferred',is_current:q.current,asked_message_id:aMsg.data.id,meeting_id:activeMeeting?.id ?? null,stage_key:q.stage_key || stage?.key || null,screen_id:(screens.data ?? []).find(s=>s.key===q.screen_key)?.id ?? null,requirement_id:(reqs.data ?? []).find(r=>r.title===q.requirement_title)?.id ?? null,suggested_answers:q.suggested_answers}).select().single();
+    const r=await sb.from('clarification_questions').insert({project_id:projectId,session_id:session.id,question:q.question,topic:q.topic || 'general',rationale:q.rationale,priority:q.priority,status:q.current?'open':'deferred',is_current:q.current,asked_message_id:aMsg.data.id,meeting_id:activeMeeting?.id ?? null,stage_key:q.stage_key || stage?.key || null,screen_id:(screens.data ?? []).find(s=>s.key===q.screen_key)?.id ?? null,requirement_id:(reqs.data ?? []).find(r=>r.title===q.requirement_title)?.id ?? null,suggested_answers:q.suggested_answers,blueprint_stage:stageForQuestion({blueprint_stage:null,requirement_id:(reqs.data ?? []).find(r=>r.title===q.requirement_title)?.id ?? null,screen_id:(screens.data ?? []).find(s=>s.key===q.screen_key)?.id ?? null,topic:q.topic||'general',question:q.question},(reqs.data ?? []) as {id:string;category:string}[])}).select().single();
     if(r.error) throw new Error('Could not save the question backlog'); if(r.data) savedQuestions.push(r.data);
   }
 
