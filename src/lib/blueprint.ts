@@ -38,12 +38,12 @@ export type StageState = 'not_started' | 'in_progress' | 'needs_decision' | 'com
 export interface StageSummary { key: StageKey; state: StageState; confirmed: number; total: number; openQuestions: number }
 
 /** Completion reflects saved data only: confirmed requirements (or saved screens for pages) with nothing unresolved and no open questions. */
-export function stageSummary(key: StageKey, reqs: Pick<Requirement, 'category' | 'status'>[], questions: Parameters<typeof stageForQuestion>[0][] & Pick<Question, 'status'>[], screens: Pick<ScreenRow, 'unresolved'>[] = [], hasBaseline = false, allReqs: Pick<Requirement, 'id' | 'category'>[] = []): StageSummary {
+export function stageSummary(key: StageKey, reqs: Pick<Requirement, 'category' | 'status'>[], questions: Pick<Question, 'status' | 'blueprint_stage' | 'requirement_id' | 'screen_id' | 'topic' | 'question'>[], screens: Pick<ScreenRow, 'unresolved'>[] = [], hasBaseline = false, allReqs: Pick<Requirement, 'id' | 'category'>[] = []): StageSummary {
   const stage = BLUEPRINT_STAGES.find(s => s.key === key)!;
   const inStage = key === 'review' ? reqs : reqs.filter(r => (stage.categories as readonly string[]).includes(r.category));
   const active = inStage.filter(r => r.status !== 'excluded' && r.status !== 'deferred');
   const confirmed = active.filter(r => r.status === 'confirmed').length;
-  const openQuestions = questions.filter(q => unresolvedQuestion(q as Question) && (key === 'review' || stageForQuestion(q, allReqs) === key)).length;
+  const openQuestions = questions.filter(q => unresolvedQuestion(q) && (key === 'review' || stageForQuestion(q, allReqs) === key)).length;
   let state: StageState;
   if (key === 'pages') {
     const pending = screens.some(s => Array.isArray(s.unresolved) && s.unresolved.length > 0);
