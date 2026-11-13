@@ -8,13 +8,15 @@ import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Chat } from "@/components/workspace/Chat";
-import { RequirementsPanel } from "@/components/workspace/RequirementsPanel";
-import { SketchCanvas } from "@/components/sketch/SketchCanvas";
+import { ProjectBlueprint } from "@/components/workspace/ProjectBlueprint";
+import { FlowCanvas } from "@/components/sketch/FlowCanvas";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { CalendarClock } from "lucide-react";
 import { ScreenInspector } from "@/components/sketch/ScreenInspector";
 import { accessQuery, workspaceQuery } from "@/lib/queries";
 import { ReviewContext } from "@/components/review/ReviewContext";
 import { ShareDialog } from "@/components/review/ShareDialog";
-import { ScopeChangesPanel } from "@/components/review/ScopeChangesPanel";
 import { can } from "@/lib/baseline";
 import { History } from "lucide-react";
 import { computeReadiness, sketchReadiness } from "@/lib/spec";
@@ -23,7 +25,6 @@ import { PENDING_IDEA_KEY } from "@/lib/pending";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MeetingSketch } from "@/components/workspace/MeetingSketch";
 import { MeetingPanel, MeetingTimer } from "@/components/workspace/MeetingPanel";
-import { QuestionBacklog } from "@/components/workspace/QuestionBacklog";
 import { DevelopmentRoom } from "@/components/workspace/DevelopmentRoom";
 import { parseAgenda } from "@/lib/meeting";
 import { saveQuestion } from "@/lib/meeting-api";
@@ -63,15 +64,15 @@ function Workspace() {
   useEffect(() => { const exit = (e: KeyboardEvent) => { if (e.key === "Escape") setMeeting(false); }; window.addEventListener("keydown", exit); return () => window.removeEventListener("keydown", exit); }, []);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [meetingSheet, setMeetingSheet] = useState(false);
+  const [focusSignal, setFocusSignal] = useState(0);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [tab, setTab] = useState("chat");
   const [guideHidden, setGuideHidden] = useState(false);
-  const [sideTab, setSideTab] = useState<"reqs" | "scope" | "meetings" | "questions" | "development">("reqs");
-  const [questionStage, setQuestionStage] = useState<string | undefined>();
+  const [sideTab, setSideTab] = useState<"blueprint" | "development">("blueprint");
   const activeMeeting = data.meetings.find(m=>['running','paused'].includes(m.status));
   const baselines = data.versions.filter((v) => v.kind === "baseline");
-  const openScope = data.scopeChanges.filter((c) => c.status === "open").length;
   const editable = can.edit(data.myRole);
 
   const refresh = useCallback(() => qc.invalidateQueries({ queryKey: ["workspace", projectId] }), [qc, projectId]);
@@ -88,7 +89,7 @@ function Workspace() {
     try {
       const r = await submit({ data: { projectId, content, skip, requestId: crypto.randomUUID(), questionId, focusScreenId: selected ?? undefined } });
       await refresh();
-      if (r.scopeChanges) toast.warning(`${r.scopeChanges} potential scope change${r.scopeChanges > 1 ? "s" : ""} vs the approved baseline`, { action: { label: "Review", onClick: () => { setSideTab("scope"); setPanelOpen(true); setSelected(null); setTab("reqs"); } } });
+      if (r.scopeChanges) toast.warning(`${r.scopeChanges} potential scope change${r.scopeChanges > 1 ? "s" : ""} vs the approved baseline`, { action: { label: "Review", onClick: () => { setSideTab("blueprint"); setPanelOpen(true); setSelected(null); setTab("reqs"); } } });
       if (r.changedScreenKeys.length) toast.success(`Sketch updated · ${r.changedScreenKeys.length} screen${r.changedScreenKeys.length > 1 ? "s" : ""}`);
       return true;
     } catch (e) {
@@ -109,22 +110,23 @@ function Workspace() {
   const showSource = (id: string) => { setHighlight(id); setTab("chat"); setTimeout(() => setHighlight(null), 2500); };
   const select = (id: string) => { setSelected(id); if (isMobile) setTab("inspect"); };
 
-  const openSide=(value: typeof sideTab, stageKey?: string)=>{setSideTab(value);setQuestionStage(stageKey);setPanelOpen(true);setSelected(null);if(isMobile)setTab('reqs');};
-  const changeView = (role: ProjectView) => { setRoleView(role); setSelected(null); if (!visibleInView(role, sideTab)) setSideTab('reqs'); setPanelOpen(false); };
+  const openSide=(value: typeof sideTab)=>{setSideTab(value);setPanelOpen(true);setSelected(null);setMeetingSheet(false);if(isMobile)setTab('reqs');};
+  const changeView = (role: ProjectView) => { setRoleView(role); setSelected(null); if (!visibleInView(role, sideTab)) setSideTab('blueprint'); };
+  /** Makes an existing backlog question the current chat topic; no new record, no AI call. */
+  const answerInChat = async (id: string) => { try { const c = await supabase.from('clarification_questions').update({ is_current: false }).eq('project_id', projectId).eq('is_current', true).neq('id', id); if (c.error) throw new Error(c.error.message); await saveQuestion(id, { is_current: true, status: 'open' }); await refresh(); setTab('chat'); setFocusSignal(n => n + 1); } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not open question'); } };
   const deferCurrent=async()=>{if(!openQuestion)return;try{await saveQuestion(openQuestion.id,{status:'deferred',is_current:false});await refresh();}catch(e){toast.error(e instanceof Error?e.message:'Could not defer question');}};
-  const chat = <Chat key={projectId} projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t,false,openQuestion?.id)} onSkip={() => void deferCurrent()} onBacklog={()=>openSide('questions')} onDifferent={async()=>{await deferCurrent();const next=data.questions.find(q=>q.id!==openQuestion?.id&&q.status==='open');if(next){await saveQuestion(next.id,{is_current:true});await refresh();}else openSide('questions');}} highlightId={highlight} />;
-  const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
+  const chat = <Chat key={projectId} projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t,false,openQuestion?.id)} onSkip={() => void deferCurrent()} onBacklog={()=>openSide('blueprint')} focusSignal={focusSignal} onDifferent={async()=>{await deferCurrent();const next=data.questions.find(q=>q.id!==openQuestion?.id&&q.status==='open');if(next){await saveQuestion(next.id,{is_current:true});await refresh();}else openSide('blueprint');}} highlightId={highlight} />;
+  const canvas = <FlowCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} editable={editable} onLayoutSaved={refresh} />;
+  const internal = ['owner','editor','developer'].includes(data.myRole??'');
   const reqPanel = (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      <div className="flex shrink-0 border-b text-sm">
-        <select aria-label="Workspace panel" value={sideTab} onChange={e=>{setSideTab(e.target.value as typeof sideTab);setQuestionStage(undefined);}} className="h-11 min-w-0 flex-1 bg-card px-3 text-sm"><option value="reqs">Requirements</option><option value="scope">Scope changes{openScope ? ` · ${openScope}` : ''}</option><option value="meetings">Meeting agenda</option><option value="questions">Question backlog</option>{['owner','editor','developer'].includes(data.myRole??'')&&<option value="development">Development Room · internal</option>}</select>
+      <div role="tablist" aria-label="Project panel" className="grid shrink-0 grid-cols-2 gap-1 border-b p-1.5">
+        <Button role="tab" aria-selected={sideTab==='blueprint'} size="sm" variant={sideTab==='blueprint'?'secondary':'ghost'} onClick={()=>setSideTab('blueprint')}>Blueprint</Button>
+        {internal ? <Button role="tab" aria-selected={sideTab==='development'} size="sm" variant={sideTab==='development'?'secondary':'ghost'} onClick={()=>setSideTab('development')}>Developer Questions</Button> : <span />}
       </div>
       <div className="min-h-0 flex-1">
-        {sideTab === "reqs" ? <RequirementsPanel project={data.project} requirements={data.requirements} onChanged={refresh} onShowSource={showSource} busy={busy} onGuidedSubmit={text => send(text)} />
-          : sideTab === 'scope' ? <ScopeChangesPanel changes={data.scopeChanges} baselines={baselines} projectId={projectId} />
-          : sideTab === 'meetings' ? <MeetingPanel data={data} onChanged={refresh} onReview={key=>openSide('questions',key)}/>
-          : sideTab === 'questions' ? <QuestionBacklog data={data} onChanged={refresh} onAnswer={(text,id)=>send(text,false,id)} stageKey={questionStage}/>
-          : <DevelopmentRoom data={data} onChanged={refresh}/>}
+        {sideTab === "development" && internal ? <DevelopmentRoom data={data} onChanged={refresh}/>
+          : <ProjectBlueprint data={data} onChanged={refresh} onShowSource={showSource} onAnswerInChat={id=>void answerInChat(id)} onSelectScreen={select} />}
       </div>
     </div>
   );
@@ -144,20 +146,20 @@ function Workspace() {
           <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions{baselines[0] ? ` · v${baselines[0].version}` : ""}</Link></Button>
           <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/specification" params={{ projectId }}><FileText className="size-4" />Product Blueprint</Link></Button>
-          <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>
+          <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle blueprint panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>
         </div>
         <ActionTooltip label="Generate Spec · Product Blueprint"><Button asChild size="icon" variant="ghost" className={`${meeting ? "hidden" : "ml-auto shrink-0 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open product blueprint"><FileText className="size-4" /></Link></Button></ActionTooltip>
       </AppHeader>
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2">
         {previewable ? <div className="flex flex-wrap items-center gap-1" aria-label="Project role preview"><span className="mr-1 text-xs text-muted-foreground">View as</span>{PROJECT_VIEWS.map(role => <Button key={role} size="sm" variant={view === role ? 'default' : 'ghost'} aria-pressed={view === role} onClick={() => changeView(role)}>{role === 'owner' ? 'Owner' : role === 'client' ? 'Client' : 'Developer'}</Button>)}</div> : null}
-        <label className="ml-auto flex min-w-0 items-center gap-2 text-xs text-muted-foreground">Open<select aria-label="Open workspace area" value="" onChange={e => openSide(e.target.value as typeof sideTab)} className="h-9 min-w-0 max-w-48 rounded-md border bg-background px-2 text-sm text-foreground"><option value="" disabled>Choose an area</option><option value="reqs">Requirements</option><option value="questions">Question Backlog</option><option value="meetings">Meetings & agenda</option><option value="scope">Requested changes</option>{['owner','editor','developer'].includes(data.myRole??'') && <option value="development">Development Room</option>}</select></label>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={()=>setMeetingSheet(true)}><CalendarClock className="size-4" />Meeting{activeMeeting ? ' · live' : ''}</Button>
         {activeMeeting&&<div className="flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}
       </div>
       {previewable && roleView !== 'owner' && <p role="status" className="shrink-0 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">{roleView === 'client' ? 'Client' : 'Developer'} preview of your project · you remain its owner. Switch to Owner to invite people or approve a version.</p>}
       {!meeting && <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-card px-3 py-2 2xl:hidden">
         <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
         <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions</Link></Button>
-        {!isMobile && <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle requirements panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>}
+        {!isMobile && <ActionTooltip label={panelOpen ? 'Hide context panel' : 'Show context panel'}><Button size="icon" variant="ghost" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle blueprint panel">{panelOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button></ActionTooltip>}
       </div>}
 
       {data.project.is_demo && !guideHidden && !meeting && (
@@ -171,7 +173,7 @@ function Workspace() {
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
           <TabsList className="mx-3 mt-2 grid grid-cols-4">
             <TabsTrigger value="chat">Chat</TabsTrigger><TabsTrigger value="sketch">Sketch</TabsTrigger>
-            <TabsTrigger value="reqs">Context</TabsTrigger><TabsTrigger value="inspect" disabled={!selectedScreen}>Screen</TabsTrigger>
+            <TabsTrigger value="reqs">Blueprint</TabsTrigger><TabsTrigger value="inspect" disabled={!selectedScreen}>Screen</TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="min-h-0 flex-1">{chat}</TabsContent>
           <TabsContent value="sketch" className="min-h-0 flex-1">{meeting ? <MeetingSketch data={data} selected={selected} onSelect={setSelected} recentIds={recentIds} /> : canvas}</TabsContent>
@@ -189,6 +191,7 @@ function Workspace() {
             : panelOpen && <aside className="absolute inset-y-0 right-0 z-20 w-[320px] max-w-full border-l bg-card shadow-lift xl:static xl:w-[340px] xl:shrink-0">{reqPanel}</aside>}
         </div>
       )}
+      <Sheet open={meetingSheet} onOpenChange={setMeetingSheet}><SheetContent className="w-[380px] max-w-full overflow-y-auto p-0 sm:max-w-[380px]"><SheetTitle className="sr-only">Meeting agenda and timer</SheetTitle><MeetingPanel data={data} onChanged={refresh} onReview={()=>openSide('blueprint')}/></SheetContent></Sheet>
     </div>
     </ReviewContext.Provider>
   );
