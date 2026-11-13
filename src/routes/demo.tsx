@@ -9,7 +9,10 @@ import { cn } from '@/lib/utils';
 import { DEMO_AGENDA, DEMO_MESSAGES, DEMO_NOTES, DEMO_PROJECT, DEMO_QUESTIONS, DEMO_REQUIREMENTS, DEMO_ROLES, DEMO_SCREENS, DEMO_VERSIONS, TOUR, sectionsFor, type DemoRole, type DemoSection } from '@/lib/demo-data';
 
 export const Route = createFileRoute('/demo')({
-  validateSearch: (search: Record<string, unknown>): { role?: DemoRole } => ({ role: search.role === 'client' || search.role === 'developer' || search.role === 'owner' ? search.role : undefined }),
+  validateSearch: (search: Record<string, unknown>): { role?: DemoRole } => {
+    const role = search['role'];
+    return role === 'client' || role === 'developer' || role === 'owner' ? { role } : {};
+  },
   head: () => ({ meta: [
     { title: 'Interactive demo — Talkistry' },
     { name: 'description', content: 'Explore a sample Talkistry project without signing up: discovery, live sketch, backlog, meetings and approvals.' },
