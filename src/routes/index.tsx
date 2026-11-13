@@ -78,7 +78,7 @@ function Landing() {
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground md:text-lg">Turn client conversations into interactive product sketches, clear requirements, and shared decisions — all in one workspace.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg"><Link to="/auth">Start shaping your idea<ArrowRight className="size-4" /></Link></Button>
-            <Button asChild size="lg" variant="outline"><Link to="/demo">Enter demo</Link></Button><Button asChild size="lg" variant="ghost"><a href="#how-it-works">Explore how it works</a></Button>
+            <Button asChild size="lg" variant="ghost"><a href="#how-it-works">Explore how it works</a></Button>
           </div>
         </section>
         <section id="how-it-works" className="mt-10 scroll-mt-6"><Preview /></section>
