@@ -30,6 +30,9 @@ use the editor.
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Owner role previews change only the presentation context; stored membership and database authorization remain authoritative, so previews never grant project access.
+- Project deletion uses an owner-checked atomic RPC that removes dependent internal insights before cascading project children; typed confirmation prevents accidental deletion.
+- Prepared account samples are created by an authenticated idempotent database RPC with literal fictional content, never AI inference or page-load seeding.
 - AI discovery turns run only in `src/lib/discovery.server.ts` via the `submitDiscoveryTurn` server fn; output is zod-validated (`src/lib/ai-schema.ts`) before persisting — keeps AI server-side and data trustworthy.
 - AI may only create `proposed`/`unresolved` requirements; `confirmed` is set by human actions that also write a `decisions` row — traceability requirement.
 - Sketch rendering is deterministic from `product_screens.components` (fixed component vocabulary in `src/lib/types.ts`); no AI images for wireframes.
