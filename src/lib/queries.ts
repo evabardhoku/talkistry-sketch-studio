@@ -11,12 +11,14 @@ async function must<T>(p: PromiseLike<{ data: T | null; error: { message: string
 export const projectsQuery = () => queryOptions({
   queryKey: ["projects"],
   queryFn: async () => {
-    const [projects, reqs, qs] = await Promise.all([
+    const [projects, reqs, qs, session, memberships] = await Promise.all([
       must(supabase.from("projects").select("*").order("updated_at", { ascending: false })),
       must(supabase.from("requirements").select("project_id,status")),
       must(supabase.from("clarification_questions").select("project_id,status,question,priority")),
+      supabase.auth.getSession(),
+      must(supabase.from('project_members').select('project_id,user_id,role')),
     ]);
-    return { projects, reqs, qs };
+    return { projects, reqs, qs, meId: session.data.session?.user.id ?? null, memberships };
   },
 });
 
