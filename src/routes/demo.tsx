@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils';
 import { DEMO_AGENDA, DEMO_MESSAGES, DEMO_NOTES, DEMO_PROJECT, DEMO_QUESTIONS, DEMO_REQUIREMENTS, DEMO_ROLES, DEMO_SCREENS, DEMO_VERSIONS, TOUR, sectionsFor, type DemoRole, type DemoSection } from '@/lib/demo-data';
 
 export const Route = createFileRoute('/demo')({
+  validateSearch: (search: Record<string, unknown>): { role?: DemoRole } => {
+    const role = search['role'];
+    return role === 'client' || role === 'developer' || role === 'owner' ? { role } : {};
+  },
   head: () => ({ meta: [
     { title: 'Interactive demo — Talkistry' },
     { name: 'description', content: 'Explore a sample Talkistry project without signing up: discovery, live sketch, backlog, meetings and approvals.' },
@@ -20,12 +24,14 @@ export const Route = createFileRoute('/demo')({
 });
 
 function DemoPage() {
-  const [role, setRole] = useState<DemoRole>('owner');
+  const search = Route.useSearch();
+  const [role, setRole] = useState<DemoRole>(search.role ?? 'owner');
   const [section, setSection] = useState<DemoSection>('discovery');
   const [step, setStep] = useState<number | null>(0);
   const sections = sectionsFor(role);
-  const changeRole = (r: DemoRole) => { setRole(r); if (!sectionsFor(r).some(s => s.id === section)) setSection('discovery'); };
-  const go = (i: number) => { const s = TOUR[i]; if (!s) return; if (s.role) setRole(s.role); else if (s.section === 'devroom' && role === 'client') setRole('owner'); setSection(s.section); setStep(i); };
+  const tour = TOUR.filter(s => sectionsFor(role).some(area => area.id === s.section));
+  const changeRole = (r: DemoRole) => { setRole(r); setSection('discovery'); setStep(0); };
+  const go = (i: number) => { const s = tour[i]; if (!s) return; setSection(s.section); setStep(i); };
   return (
     <div className="flex min-h-screen flex-col">
       <header className="grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b bg-card/80 px-3 sm:px-4">
@@ -49,7 +55,7 @@ function DemoPage() {
       </div>
       {step === null
         ? <Button className="fixed bottom-4 right-4 z-40 shadow-lift" onClick={() => go(0)}><Compass className="size-4" />Guided tour</Button>
-        : <Tour i={step} onGo={go} onClose={() => setStep(null)} />}
+        : <Tour i={step} tour={tour} role={role} onGo={go} onClose={() => setStep(null)} />}
     </div>
   );
 }
@@ -78,8 +84,8 @@ function Wrap({ title, children }: { title: string; children: React.ReactNode })
   return <section data-tour="section" className="mx-auto max-w-3xl space-y-2"><h2 className="font-display text-2xl">{title}</h2>{children}</section>;
 }
 
-function Tour({ i, onGo, onClose }: { i: number; onGo: (i: number) => void; onClose: () => void }) {
-  const s = TOUR[i];
+function Tour({ i, tour, role, onGo, onClose }: { i: number; tour: typeof TOUR; role: DemoRole; onGo: (i: number) => void; onClose: () => void }) {
+  const s = tour[i];
   const [box, setBox] = useState<DOMRect | null>(null);
   useLayoutEffect(() => {
     const el = s && document.querySelector(`[data-tour="${s.target}"]`);
@@ -94,14 +100,14 @@ function Tour({ i, onGo, onClose }: { i: number; onGo: (i: number) => void; onCl
   if (!s) return null;
   return <>
     {box && <div aria-hidden className="pointer-events-none fixed z-30 rounded-lg ring-2 ring-primary ring-offset-2 ring-offset-background transition-all" style={{ top: box.top - 4, left: box.left - 4, width: box.width + 8, height: box.height + 8 }} />}
-    <div role="dialog" aria-label="Guided tour" className="fixed inset-x-3 bottom-3 z-40 rounded-xl border bg-card p-4 shadow-lift sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-[360px]">
-      <div className="flex items-start justify-between gap-2"><p className="text-[11px] font-medium text-primary">Step {i + 1} of {TOUR.length}</p><Button size="icon" variant="ghost" className="size-7" aria-label="Close tour" onClick={onClose}><X className="size-4" /></Button></div>
+    <div role="dialog" aria-label="Guided tour" className="fixed inset-x-3 bottom-3 z-40 max-h-[50dvh] overflow-y-auto rounded-lg border bg-card p-4 shadow-lift sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-[360px]">
+      <div className="flex items-start justify-between gap-2"><p className="text-[11px] font-medium text-primary">{role === 'owner' ? 'Owner' : role === 'client' ? 'Client' : 'Developer'} tour · Step {i + 1} of {tour.length}</p><Button size="icon" variant="ghost" className="size-7" aria-label="Close tour" onClick={onClose}><X className="size-4" /></Button></div>
       <h2 className="font-display text-xl">{s.title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
-      <div className="mt-3 h-1 overflow-hidden rounded bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${((i + 1) / TOUR.length) * 100}%` }} /></div>
+      <p className="mt-1 text-sm text-muted-foreground">{s.section === 'requirements' && role === 'client' ? 'Review the suggested requirements, answer questions and share feedback. Nothing is approved by the AI.' : s.section === 'requirements' && role === 'developer' ? 'Review what needs to be built and flag unclear requirements. Add estimates and internal notes without approving a version.' : s.section === 'versions' && s.target !== 'cta' && role !== 'owner' ? 'Review the approved version and compare later changes. Only the project owner can approve a new version.' : s.body}</p>
+      <div className="mt-3 h-1 overflow-hidden rounded bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${((i + 1) / tour.length) * 100}%` }} /></div>
       <div className="mt-3 flex justify-between gap-2">
         <Button size="sm" variant="outline" disabled={i === 0} onClick={() => onGo(i - 1)}><ArrowLeft className="size-4" />Back</Button>
-        {i < TOUR.length - 1 ? <Button size="sm" onClick={() => onGo(i + 1)}>Next<ArrowRight className="size-4" /></Button> : <Button size="sm" asChild><Link to="/auth">Create account</Link></Button>}
+        {i < tour.length - 1 ? <Button size="sm" onClick={() => onGo(i + 1)}>Next<ArrowRight className="size-4" /></Button> : <Button size="sm" asChild><Link to="/auth">Create account</Link></Button>}
       </div>
     </div>
   </>;

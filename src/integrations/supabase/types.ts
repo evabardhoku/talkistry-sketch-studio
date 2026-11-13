@@ -994,6 +994,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: string }
+      add_sample_projects: { Args: never; Returns: string[] }
       approve_baseline: {
         Args: { _notes: string; _project_id: string }
         Returns: string
@@ -1043,6 +1044,10 @@ export type Database = {
         }
       }
       create_meeting_demo: { Args: never; Returns: string }
+      delete_owned_project: {
+        Args: { _project_id: string }
+        Returns: undefined
+      }
       get_invitation: {
         Args: { _token: string }
         Returns: {

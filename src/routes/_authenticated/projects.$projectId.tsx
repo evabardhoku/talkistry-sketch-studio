@@ -28,6 +28,7 @@ import { DevelopmentRoom } from "@/components/workspace/DevelopmentRoom";
 import { parseAgenda } from "@/lib/meeting";
 import { saveQuestion } from "@/lib/meeting-api";
 import { ActionTooltip } from '@/components/ActionTooltip';
+import { canPreviewRoles, PROJECT_VIEWS, visibleInView, type ProjectView } from '@/lib/project-views';
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({ meta: [
@@ -49,7 +50,11 @@ export const Route = createFileRoute("/_authenticated/projects/$projectId")({
 function Workspace() {
   const { projectId } = Route.useParams();
   const qc = useQueryClient();
-  const { data } = useSuspenseQuery(workspaceQuery(projectId));
+  const { data: savedData } = useSuspenseQuery(workspaceQuery(projectId));
+  const [roleView, setRoleView] = useState<ProjectView>('owner');
+  const previewable = canPreviewRoles(savedData.myRole);
+  const view = previewable ? roleView : savedData.myRole === 'client' ? 'client' : savedData.myRole === 'developer' ? 'developer' : 'owner';
+  const data = previewable ? { ...savedData, myRole: roleView } : savedData;
   const submit = useServerFn(submitDiscoveryTurn);
   const isMobile = useIsMobile();
   const [busy, setBusy] = useState(false);
@@ -58,7 +63,7 @@ function Workspace() {
   useEffect(() => { const exit = (e: KeyboardEvent) => { if (e.key === "Escape") setMeeting(false); }; window.addEventListener("keydown", exit); return () => window.removeEventListener("keydown", exit); }, []);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [tab, setTab] = useState("chat");
   const [guideHidden, setGuideHidden] = useState(false);
@@ -105,6 +110,7 @@ function Workspace() {
   const select = (id: string) => { setSelected(id); if (isMobile) setTab("inspect"); };
 
   const openSide=(value: typeof sideTab, stageKey?: string)=>{setSideTab(value);setQuestionStage(stageKey);setPanelOpen(true);setSelected(null);if(isMobile)setTab('reqs');};
+  const changeView = (role: ProjectView) => { setRoleView(role); setSelected(null); if (!visibleInView(role, sideTab)) setSideTab('reqs'); setPanelOpen(false); };
   const deferCurrent=async()=>{if(!openQuestion)return;try{await saveQuestion(openQuestion.id,{status:'deferred',is_current:false});await refresh();}catch(e){toast.error(e instanceof Error?e.message:'Could not defer question');}};
   const chat = <Chat key={projectId} projectId={projectId} meeting={meeting} messages={data.messages} openQuestion={openQuestion} busy={busy} error={error} readOnly={!editable} onSubmit={(t) => send(t,false,openQuestion?.id)} onSkip={() => void deferCurrent()} onBacklog={()=>openSide('questions')} onDifferent={async()=>{await deferCurrent();const next=data.questions.find(q=>q.id!==openQuestion?.id&&q.status==='open');if(next){await saveQuestion(next.id,{is_current:true});await refresh();}else openSide('questions');}} highlightId={highlight} />;
   const canvas = <SketchCanvas screens={data.screens} connections={data.connections} selectedId={selected} onSelect={select} recentIds={recentIds} />;
@@ -142,7 +148,12 @@ function Workspace() {
         </div>
         <ActionTooltip label="Generate Spec · Product Blueprint"><Button asChild size="icon" variant="ghost" className={`${meeting ? "hidden" : "ml-auto shrink-0 2xl:hidden"}`}><Link to="/projects/$projectId/specification" params={{ projectId }} aria-label="Open product blueprint"><FileText className="size-4" /></Link></Button></ActionTooltip>
       </AppHeader>
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2"><Button size="sm" variant="outline" onClick={()=>openSide('meetings')}>Meetings & agenda</Button><Button size="sm" variant="ghost" onClick={()=>openSide('questions')}>Question Backlog · {readiness.decisionBacklog} decisions</Button>{['owner','editor','developer'].includes(data.myRole??'')&&<Button size="sm" variant="ghost" onClick={()=>openSide('development')}>Development Room</Button>}{activeMeeting&&<div className="ml-auto flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}</div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card px-3 py-2">
+        {previewable ? <div className="flex flex-wrap items-center gap-1" aria-label="Project role preview"><span className="mr-1 text-xs text-muted-foreground">View as</span>{PROJECT_VIEWS.map(role => <Button key={role} size="sm" variant={view === role ? 'default' : 'ghost'} aria-pressed={view === role} onClick={() => changeView(role)}>{role === 'owner' ? 'Owner' : role === 'client' ? 'Client' : 'Developer'}</Button>)}</div> : <Button asChild size="sm" variant="ghost"><Link to="/demo">Explore other roles</Link></Button>}
+        <label className="ml-auto flex min-w-0 items-center gap-2 text-xs text-muted-foreground">Open<select aria-label="Open workspace area" value="" onChange={e => openSide(e.target.value as typeof sideTab)} className="h-9 min-w-0 max-w-48 rounded-md border bg-background px-2 text-sm text-foreground"><option value="" disabled>Choose an area</option><option value="reqs">Requirements</option><option value="questions">Question Backlog</option><option value="meetings">Meetings & agenda</option><option value="scope">Requested changes</option>{['owner','editor','developer'].includes(data.myRole??'') && <option value="development">Development Room</option>}</select></label>
+        {activeMeeting&&<div className="flex flex-wrap items-center gap-2 text-xs"><span>{parseAgenda(activeMeeting.agenda)[activeMeeting.active_stage]?.name}</span><MeetingTimer meeting={activeMeeting}/></div>}
+      </div>
+      {previewable && roleView !== 'owner' && <p role="status" className="shrink-0 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">{roleView === 'client' ? 'Client' : 'Developer'} preview of your project · you remain its owner. Switch to Owner to invite people or approve a version.</p>}
       {!meeting && <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-card px-3 py-2 2xl:hidden">
         <ShareDialog projectId={projectId} people={data.people} myRole={data.myRole} baselines={baselines} onChanged={refresh} />
         <Button asChild size="sm" variant="outline"><Link to="/projects/$projectId/versions" params={{ projectId }}><History className="size-4" />Versions</Link></Button>
@@ -151,7 +162,7 @@ function Workspace() {
 
       {data.project.is_demo && !guideHidden && !meeting && (
         <div className="flex items-start gap-3 border-b bg-primary-soft px-4 py-2 text-xs text-accent-foreground">
-          <p className="flex-1"><b>Fictional demo:</b> Private tutoring booking platform · sample conversations and stakeholder notes are not real client data.</p>
+          <p className="flex-1"><b>Sample project:</b> Prepared fictional conversations and sketches, not real client data.</p>
           <ActionTooltip label="Dismiss demo notice"><Button variant="ghost" size="icon" className="min-h-11 min-w-11 shrink-0" onClick={() => setGuideHidden(true)} aria-label="Hide guide"><X className="size-3.5" /></Button></ActionTooltip>
         </div>
       )}
