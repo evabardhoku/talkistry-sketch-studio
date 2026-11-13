@@ -53,3 +53,7 @@ use the editor.
 - The header logo and favicon reuse one public SVG asset so the app identity stays consistent at small sizes.
 - Email signup and resend links return to the public auth page before navigating to protected content, so confirmation can establish a session first.
 - Guided blueprint sections collect reviewed answers locally and submit one turn through the existing discovery function; proposals use the same saved requirements and separate human confirmation.
+
+- The workspace right panel has only Project Blueprint (six product-definition stages + Open Decisions from the existing question backlog) and Developer Questions (existing development_insights/comments); meetings open in a side sheet — one source of truth per concern.
+- Blueprint stage state is derived deterministically in `src/lib/blueprint.ts` from saved requirements, screens, questions and baselines; never AI percentages.
+- Canvas layout lives in nullable `product_screens.layout_*` columns written only by the client on drag/resize (no AI calls); AI turns never touch them, and the first manual edit pins all automatic positions.

@@ -1,4 +1,5 @@
 # Talkistry enhancements
+- [x] Workspace simplification: two-section right panel, six-stage blueprint with Open Decisions and Answer in Chat, Developer Questions with inline replies, movable/resizable saved canvas.
 - [x] Add safe role previews and all-role project browsing without changing memberships.
 - [x] Add owner-only project deletion with explicit typed confirmation; atomic dependent cleanup.
 - [x] Make the public tour cover each role without silently changing the chosen role.

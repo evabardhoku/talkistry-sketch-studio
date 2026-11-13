@@ -7,11 +7,11 @@ import type { Message, Question } from "@/lib/types";
 import { VoiceInput } from "./VoiceInput";
 import { ActionTooltip } from '@/components/ActionTooltip';
 
-export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, onBacklog, onDifferent, highlightId, projectId, meeting = false, readOnly = false }: {
+export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, onBacklog, onDifferent, highlightId, projectId, meeting = false, readOnly = false, focusSignal = 0 }: {
   messages: Message[]; openQuestion: Question | undefined; busy: boolean; error: string | null;
   onSubmit: (text: string) => Promise<boolean>; onSkip: () => void; highlightId: string | null;
   projectId: string; meeting?: boolean; readOnly?: boolean;
-  onBacklog?:()=>void; onDifferent?:()=>void;
+  onBacklog?:()=>void; onDifferent?:()=>void; focusSignal?: number;
 }) {
   const [text, setText] = useState("");
   const [voiceActive, setVoiceActive] = useState(false);
@@ -26,6 +26,8 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, on
     window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
   }, [text, voiceActive]);
   const end = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (focusSignal) setTimeout(() => input.current?.focus(), 50); }, [focusSignal]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length, busy]);
   useEffect(() => { if (highlightId) document.getElementById(`msg-${highlightId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [highlightId]);
   const empty = messages.length === 0;
@@ -74,11 +76,11 @@ export function Chat({ messages, openQuestion, busy, error, onSubmit, onSkip, on
             <ActionTooltip label="Defer question to backlog"><Button size="icon" variant="ghost" onClick={onSkip} disabled={voiceActive} className="shrink-0" aria-label="Add current question to backlog"><SkipForward className="size-3.5" /></Button></ActionTooltip>
           </div>
         )}
-        {onBacklog && <div className="mb-2 flex flex-wrap gap-1"><Button size="sm" variant="ghost" className="h-auto max-w-full whitespace-normal py-1.5" disabled={busy} onClick={onBacklog}>Review unanswered questions</Button>{onDifferent&&<Button size="sm" variant="ghost" className="h-auto max-w-full whitespace-normal py-1.5" disabled={busy||voiceActive} onClick={onDifferent}>Ask a different question</Button>}</div>}
+        {onBacklog && <div className="mb-2 flex flex-wrap gap-1"><Button size="sm" variant="ghost" className="h-auto max-w-full whitespace-normal py-1.5" disabled={busy} onClick={onBacklog}>Open decisions</Button>{onDifferent&&<Button size="sm" variant="ghost" className="h-auto max-w-full whitespace-normal py-1.5" disabled={busy||voiceActive} onClick={onDifferent}>Ask a different question</Button>}</div>}
         {error && <p role="alert" className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
         {transcript && <p role="status" className="mb-2 text-xs text-primary">Transcription preview · edit your answer below before sending.</p>}
         <div className="flex items-end gap-2">
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} disabled={busy}
+          <Textarea ref={input} value={text} onChange={(e) => setText(e.target.value)} rows={2} disabled={busy}
             aria-label={transcript ? "Editable transcription" : "Discovery answer"}
             placeholder={empty ? "e.g. I want an app where parents can find and book private tutors." : "Type your answer…"}
             onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } }}
