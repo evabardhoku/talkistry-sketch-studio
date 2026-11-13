@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Background, Handle, MarkerType, NodeResizer, Panel, Position, ReactFlow, ReactFlowProvider, applyNodeChanges, useReactFlow, type Edge, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertCircle, LayoutGrid, Maximize, Minus, Plus, Sparkles } from 'lucide-react';
@@ -11,14 +11,14 @@ import { parseComponents, parseStrings, type Connection, type ScreenRow } from '
 import { isManual, resolveLayout } from '@/lib/canvas-layout';
 import { ScreenWireframe } from './ScreenWireframe';
 
-type ScreenData = { screen: ScreenRow; recent: boolean; editable: boolean };
+type ScreenData = { screen: ScreenRow; recent: boolean; editable: boolean; onResized: (id: string, b: { x: number; y: number; width: number; height: number }) => void };
 type ScreenNode = Node<ScreenData, 'screen'>;
 
-const ScreenNodeView = memo(function ScreenNodeView({ data, selected }: NodeProps<ScreenNode>) {
+const ScreenNodeView = memo(function ScreenNodeView({ id, data, selected }: NodeProps<ScreenNode>) {
   const s = data.screen, unresolved = parseStrings(s.unresolved);
   return (
     <>
-      {data.editable && <NodeResizer isVisible={selected} minWidth={180} minHeight={160} lineClassName="!border-primary" handleClassName="!size-2.5 !rounded-sm !border-primary !bg-card" />}
+      {data.editable && <NodeResizer isVisible={selected} minWidth={180} minHeight={160} lineClassName="!border-primary" handleClassName="!size-2.5 !rounded-sm !border-primary !bg-card" onResizeEnd={(_, p) => data.onResized(id, p)} />}
       <Handle type="target" position={Position.Left} className="!opacity-0" isConnectable={false} />
       <div className={cn('flex size-full flex-col overflow-hidden rounded-xl border bg-sketch text-left shadow-soft', selected && 'ring-2 ring-primary', data.recent && 'changed-pulse border-primary/60')}>
         <div className="flex cursor-grab items-center gap-1.5 border-b bg-muted/50 px-2.5 py-1.5 active:cursor-grabbing">
@@ -46,10 +46,12 @@ export function FlowCanvas(props: Props) {
 
 function Canvas({ screens, connections, selectedId, onSelect, recentIds, editable, onLayoutSaved }: Props) {
   const flow = useReactFlow();
+  const resizedRef = useRef<ScreenData['onResized']>(() => {});
+  const onResized = useCallback<ScreenData['onResized']>((id, b) => resizedRef.current(id, b), []);
   const build = useCallback((): ScreenNode[] => {
     const boxes = resolveLayout(screens);
-    return screens.map(s => { const b = boxes.get(s.id)!; return { id: s.id, type: 'screen', position: { x: b.x, y: b.y }, width: b.w, height: b.h, selected: s.id === selectedId, data: { screen: s, recent: recentIds.has(s.id), editable } }; });
-  }, [screens, recentIds, editable, selectedId]);
+    return screens.map(s => { const b = boxes.get(s.id)!; return { id: s.id, type: 'screen', position: { x: b.x, y: b.y }, width: b.w, height: b.h, selected: s.id === selectedId, data: { screen: s, recent: recentIds.has(s.id), editable, onResized } }; });
+  }, [screens, recentIds, editable, selectedId, onResized]);
   const [nodes, setNodes] = useState<ScreenNode[]>(build);
   useEffect(() => setNodes(build()), [build]);
   const edges = useMemo<Edge[]>(() => connections.map(c => ({ id: c.id, source: c.from_screen_id, target: c.to_screen_id, label: c.label || undefined, type: 'smoothstep', style: { strokeDasharray: '4 3', strokeWidth: 1.5 }, className: '[&_path]:!stroke-primary/60', labelStyle: { fontSize: 10 }, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 } })), [connections]);
@@ -64,6 +66,8 @@ function Canvas({ screens, connections, selectedId, onSelect, recentIds, editabl
     await onLayoutSaved();
   }, [flow, onLayoutSaved]);
 
+  resizedRef.current = (id, b) => void persist(id, { layout_x: Math.round(b.x), layout_y: Math.round(b.y), layout_w: Math.round(b.width), layout_h: Math.round(b.height) });
+
   const resetLayout = async () => {
     if (screens.some(isManual) && !window.confirm('Replace your manual arrangement with the automatic layout? Pages and links are kept.')) return;
     const r = await supabase.from('product_screens').update({ layout_x: null, layout_y: null, layout_w: null, layout_h: null }).eq('project_id', screens[0]!.project_id);
@@ -75,9 +79,7 @@ function Canvas({ screens, connections, selectedId, onSelect, recentIds, editabl
     <div className="h-full bg-dotgrid">
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange}
         onNodeClick={(_, n) => onSelect(n.id)} onNodeDragStop={(_, n) => void persist(n.id, { layout_x: Math.round(n.position.x), layout_y: Math.round(n.position.y) })}
-        nodesDraggable={editable} nodesConnectable={false} edgesFocusable={false} fitView fitViewOptions={{ padding: 0.15 }} minZoom={0.2} maxZoom={2} proOptions={{ hideAttribution: true }}
-        onNodeResizeEnd={undefined}>
-        <ResizeSaver persist={persist} />
+        nodesDraggable={editable} nodesConnectable={false} edgesFocusable={false} fitView fitViewOptions={{ padding: 0.15 }} minZoom={0.2} maxZoom={2} proOptions={{ hideAttribution: true }}>
         <Background gap={20} size={1} className="!bg-transparent" />
         <Panel position="bottom-right" className="flex gap-1 rounded-md border bg-card p-1 shadow-soft">
           <ActionTooltip label="Zoom out"><Button size="icon" variant="ghost" className="size-8" aria-label="Zoom out" onClick={() => void flow.zoomOut()}><Minus className="size-4" /></Button></ActionTooltip>
@@ -90,14 +92,3 @@ function Canvas({ screens, connections, selectedId, onSelect, recentIds, editabl
   );
 }
 
-/** Saves size after a resize gesture ends (NodeResizer emits dimension changes with resizing=false at the end). */
-function ResizeSaver({ persist }: { persist: (id: string, p: object) => Promise<void> }) {
-  const flow = useReactFlow();
-  useEffect(() => {
-    const el = document.querySelector('.react-flow');
-    if (!el) return;
-    const onUp = () => { const n = flow.getNodes().find(x => x.resizing === false && (x as Node & { __pendingResize?: boolean }).__pendingResize); void n; };
-    el.addEventListener('pointerup', onUp); return () => el.removeEventListener('pointerup', onUp);
-  }, [flow, persist]);
-  return null;
-}
