@@ -1,0 +1,3 @@
+ALTER TABLE public.product_screens ADD COLUMN IF NOT EXISTS layout_x double precision, ADD COLUMN IF NOT EXISTS layout_y double precision, ADD COLUMN IF NOT EXISTS layout_w double precision, ADD COLUMN IF NOT EXISTS layout_h double precision;
+COMMENT ON COLUMN public.product_screens.layout_x IS 'Manual canvas position; NULL means automatic layout. Never written by AI.';
+ALTER TABLE public.clarification_questions ADD COLUMN IF NOT EXISTS blueprint_stage text;

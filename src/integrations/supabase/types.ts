@@ -19,6 +19,7 @@ export type Database = {
           answer: string
           answer_message_id: string | null
           asked_message_id: string | null
+          blueprint_stage: string | null
           created_at: string
           history: Json
           id: string
@@ -42,6 +43,7 @@ export type Database = {
           answer?: string
           answer_message_id?: string | null
           asked_message_id?: string | null
+          blueprint_stage?: string | null
           created_at?: string
           history?: Json
           id?: string
@@ -65,6 +67,7 @@ export type Database = {
           answer?: string
           answer_message_id?: string | null
           asked_message_id?: string | null
+          blueprint_stage?: string | null
           created_at?: string
           history?: Json
           id?: string
@@ -455,6 +458,10 @@ export type Database = {
           created_at: string
           id: string
           key: string
+          layout_h: number | null
+          layout_w: number | null
+          layout_x: number | null
+          layout_y: number | null
           name: string
           position: number
           project_id: string
@@ -470,6 +477,10 @@ export type Database = {
           created_at?: string
           id?: string
           key: string
+          layout_h?: number | null
+          layout_w?: number | null
+          layout_x?: number | null
+          layout_y?: number | null
           name: string
           position?: number
           project_id: string
@@ -485,6 +496,10 @@ export type Database = {
           created_at?: string
           id?: string
           key?: string
+          layout_h?: number | null
+          layout_w?: number | null
+          layout_x?: number | null
+          layout_y?: number | null
           name?: string
           position?: number
           project_id?: string
