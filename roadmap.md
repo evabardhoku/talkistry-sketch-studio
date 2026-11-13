@@ -1,4 +1,9 @@
 # Talkistry enhancements
+- [ ] Add safe role previews and all-role project browsing without changing memberships.
+- [ ] Add owner-only project deletion with explicit confirmation.
+- [ ] Make the public tour cover each role without silently changing the chosen role.
+- [ ] Simplify the workspace and add fictional ready-made projects to the requesting account.
+- [ ] Verify role previews, deletion safeguards, saved samples, and small-screen layouts.
 - [x] Public read-only demo (no sign-up) with Owner/Client/Developer views and an 11-step guided tour; browser-checked.
 - [x] UX feedback: distinct backlog controls, Open default, contained layouts, icon tooltips, and guided blueprint sections; verified persona proposals saved through real discovery and persisted after refresh, tablet/mobile layouts, and 23 regression tests.
 - [x] Account-access diagnosis: email and Google enabled, signup allowed, confirmation required and published return URLs allowed. Added confirmation resend, clear unconfirmed-account feedback, public email callback and recoverable connection errors; inbox delivery remains unverified.
